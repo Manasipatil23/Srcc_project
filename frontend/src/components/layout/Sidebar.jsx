@@ -1,10 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-<<<<<<< HEAD
-import { Calendar, LayoutDashboard, Users, Clock, LogOut, MessageSquare } from 'lucide-react';
-=======
-import { Calendar, LayoutDashboard, Users, Clock, Bell, LogOut, AlarmClock } from 'lucide-react';
->>>>>>> 1b269ef (Improved Admin Dashboard.)
+import { Calendar, LayoutDashboard, Users, Clock, Bell, LogOut, AlarmClock, MessageSquare } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 const Sidebar = () => {
@@ -15,11 +11,8 @@ const Sidebar = () => {
     { name: 'Dashboard', path: '/dashboard', icon: <LayoutDashboard size={20} /> },
     { name: 'Book Appointment', path: '/book', icon: <Calendar size={20} /> },
     { name: 'My Appointments', path: '/appointments', icon: <Clock size={20} /> },
-<<<<<<< HEAD
     { name: 'Feedback', path: '/feedback', icon: <MessageSquare size={20} /> },
-=======
     { name: 'Notifications', path: '/notifications', icon: <Bell size={20} /> },
->>>>>>> 1b269ef (Improved Admin Dashboard.)
   ];
 
   const adminLinks = [
@@ -28,8 +21,9 @@ const Sidebar = () => {
     { name: 'Schedule Patient', path: '/schedule-patient', icon: <Calendar size={20} /> },
     { name: 'All Appointments', path: '/appointments', icon: <Calendar size={20} /> },
     { name: 'Notifications', path: '/notifications', icon: <Bell size={20} /> },
-    { name: 'Reminders', path: '/admin-reminders', icon: <AlarmClock size={20} />
-}
+    {
+      name: 'Reminders', path: '/admin-reminders', icon: <AlarmClock size={20} />
+    }
   ];
 
   const navItems = isAdmin ? adminLinks : patientLinks;
@@ -49,14 +43,14 @@ const Sidebar = () => {
         <h1 style={{ color: 'var(--primary)', fontSize: '1.25rem', fontWeight: 'bold', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <span style={{ backgroundColor: 'var(--primary)', color: 'white', padding: '0.25rem', borderRadius: 'var(--radius-sm)' }}>
-               <Calendar size={20} />
+              <Calendar size={20} />
             </span>
             <span>SRCC</span>
           </div>
           <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Children's Hospital</span>
         </h1>
       </div>
-      
+
       <nav style={{ flex: 1, padding: '1.5rem 1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
         {navItems.map((item) => (
           <NavLink

@@ -14,17 +14,13 @@ import TherapistsManagement from './pages/TherapistsManagement';
 import Notifications from './pages/Notifications';
 import Reschedule from './pages/Reschedule';
 import ProfilePage from './pages/ProfilePage';
-<<<<<<< HEAD
-import FeedbackForm from './pages/FeedbackForm';
-import FeedbackHistory from './pages/FeedbackHistory';
-
-=======
 import TherapistProfile from './pages/TherapistProfile';
 import TherapistSchedule from './pages/TherapistSchedule';
 import AdminReminders from './pages/AdminReminders';
 import SchedulePatient from './pages/SchedulePatient';
 import SystemSettings from './pages/SystemSettings';
->>>>>>> 1b269ef (Improved Admin Dashboard.)
+import FeedbackForm from './pages/FeedbackForm';
+import FeedbackHistory from './pages/FeedbackHistory';
 
 function App() {
   return (
@@ -45,16 +41,14 @@ function App() {
             <Route path="/notifications" element={<Notifications />} />
             <Route path="/reschedule" element={<Reschedule />} />
             <Route path="/profile" element={<ProfilePage />} />
-<<<<<<< HEAD
-            <Route path="/feedback-form" element={<FeedbackForm />} />
-            <Route path="/feedback" element={<FeedbackHistory />} />
-=======
+
             <Route path="/therapists/:id" element={<TherapistProfile />} />
             <Route path="/therapists/:id/schedule" element={<TherapistSchedule />} />
             <Route path="/admin-reminders" element={<AdminReminders />} />
             <Route path="/schedule-patient" element={<SchedulePatient />} />
             <Route path="/settings" element={<SystemSettings />} />
->>>>>>> 1b269ef (Improved Admin Dashboard.)
+            <Route path="/feedback-form" element={<FeedbackForm />} />
+            <Route path="/feedback-history" element={<FeedbackHistory />} />
           </Route>
         </Routes>
       </AuthProvider>
