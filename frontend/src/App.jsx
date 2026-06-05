@@ -14,6 +14,9 @@ import TherapistsManagement from './pages/TherapistsManagement';
 import Notifications from './pages/Notifications';
 import Reschedule from './pages/Reschedule';
 import ProfilePage from './pages/ProfilePage';
+import FeedbackForm from './pages/FeedbackForm';
+import FeedbackHistory from './pages/FeedbackHistory';
+
 
 function App() {
   return (
@@ -34,6 +37,8 @@ function App() {
             <Route path="/notifications" element={<Notifications />} />
             <Route path="/reschedule" element={<Reschedule />} />
             <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/feedback-form" element={<FeedbackForm />} />
+            <Route path="/feedback" element={<FeedbackHistory />} />
           </Route>
         </Routes>
       </AuthProvider>

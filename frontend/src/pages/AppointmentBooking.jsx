@@ -3,13 +3,29 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import { mockTherapists, timeSlots } from '../data/mockData';
-import { Calendar as CalendarIcon, Clock, User, CheckCircle, ChevronRight, ChevronLeft } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, User, CheckCircle, ChevronRight, ChevronLeft, Star } from 'lucide-react';
 
 const AppointmentBooking = () => {
   const [step, setStep] = useState(1);
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTherapist, setSelectedTherapist] = useState(null);
   const [selectedSlot, setSelectedSlot] = useState(null);
+  const slotAvailability = {
+  '09:00 AM': true,
+  '09:30 AM': true,
+  '10:00 AM': false,
+  '10:30 AM': true,
+  '11:00 AM': false,
+  '11:30 AM': true,
+  '01:00 PM': true,
+  '01:30 PM': false,
+  '02:00 PM': true,
+  '02:30 PM': true,
+  '03:00 PM': false,
+  '03:30 PM': true,
+  '04:00 PM': true,
+  '04:30 PM': false
+};
 
   const nextStep = () => setStep(prev => Math.min(prev + 1, 4));
   const prevStep = () => setStep(prev => Math.max(prev - 1, 1));
@@ -74,6 +90,17 @@ const AppointmentBooking = () => {
                       <div>
                         <h3 style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{therapist.name}</h3>
                         <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>{therapist.specialty}</p>
+                        <div style={{
+                          display: 'flex',
+                         alignItems: 'center',
+                         gap: '0.35rem',
+                         marginTop: '0.25rem',
+                         color: 'var(--text-secondary)',
+                         fontSize: '0.8rem'
+                       }}>
+                         <Star size={14} fill="#facc15" color="#facc15" />
+                         <span>{therapist.rating} / 5</span>
+                       </div>
                       </div>
                     </div>
                   </div>
@@ -102,20 +129,45 @@ const AppointmentBooking = () => {
                   <div>
                     <label style={{ display: 'block', marginBottom: '0.75rem', fontWeight: 500 }}>Available Slots</label>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: '0.75rem' }}>
-                      {timeSlots.map(slot => (
-                        <button
-                          key={slot}
-                          onClick={() => setSelectedSlot(slot)}
-                          style={{
-                            padding: '0.75rem 0.5rem', border: `1px solid ${selectedSlot === slot ? 'var(--primary)' : 'var(--border)'}`,
-                            borderRadius: 'var(--radius-md)', backgroundColor: selectedSlot === slot ? 'var(--primary)' : 'var(--bg-main)',
-                            color: selectedSlot === slot ? 'white' : 'var(--text-primary)', cursor: 'pointer', transition: 'all var(--transition-fast)',
-                            fontWeight: selectedSlot === slot ? 600 : 400
-                          }}
-                        >
-                          {slot}
-                        </button>
-                      ))}
+                      {timeSlots.map(slot => {
+                        const isAvailable = slotAvailability[slot];
+                        return (
+                         <button
+                           key={slot}
+                           onClick={() => isAvailable && setSelectedSlot(slot)}
+                           disabled={!isAvailable}
+                           style={{
+                            padding: '0.75rem 0.5rem',
+                            border: `1px solid ${
+                             selectedSlot === slot
+                             ? 'var(--primary)'
+                             : isAvailable
+                             ? '#22c55e'
+                             : '#ef4444'
+                          }`,
+                          borderRadius: 'var(--radius-md)',
+                          backgroundColor:
+                             selectedSlot === slot
+                              ? 'var(--primary)'
+                              : isAvailable
+                              ? '#ecfdf5'
+                             : '#fef2f2',
+                          color:
+                             selectedSlot === slot
+                             ? 'white'
+                              : isAvailable
+                              ? '#15803d'
+                             : '#b91c1c',
+                          cursor: isAvailable ? 'pointer' : 'not-allowed',
+                          transition: 'all var(--transition-fast)',
+                          fontWeight: selectedSlot === slot ? 600 : 500,
+                          opacity: isAvailable ? 1 : 0.85
+                         }}
+                       >
+                         {slot}
+                       </button>
+                      );
+                     })}
                     </div>
                   </div>
                 )}

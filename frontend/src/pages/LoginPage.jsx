@@ -56,12 +56,22 @@ const LoginPage = () => {
         </Button>
       </div>
 
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
-        <Card style={{ maxWidth: '400px', width: '100%', padding: '2.5rem', position: 'relative', overflow: 'hidden' }}>
+      <motion.div
+       initial={{ opacity: 0, y: 10 }}
+       animate={{ opacity: 1, y: 0 }}
+       transition={{ duration: 0.3 }}
+       style={{ width: '100%', maxWidth: '500px' }}
+      >
+      <Card style={{
+       width: '100%',
+        padding: '2.75rem',
+       position: 'relative',
+       overflow: 'hidden'
+      }}>
           {/* Top colored accent based on role */}
           <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '6px', backgroundColor: isAdmin ? 'var(--accent)' : 'var(--primary)' }}></div>
 
-          <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+          <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
             <div style={{ display: 'inline-flex', padding: '0.75rem', borderRadius: '50%', backgroundColor: isAdmin ? 'rgba(20, 184, 166, 0.1)' : 'var(--secondary)', marginBottom: '1rem' }}>
               {isAdmin ? <ShieldCheck size={32} color="var(--accent)" /> : <HeartPulse size={32} color="var(--primary)" />}
             </div>

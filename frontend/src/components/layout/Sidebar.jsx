@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Calendar, LayoutDashboard, Users, Clock, Settings, LogOut } from 'lucide-react';
+import { Calendar, LayoutDashboard, Users, Clock, LogOut, MessageSquare } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 const Sidebar = () => {
@@ -11,6 +11,7 @@ const Sidebar = () => {
     { name: 'Dashboard', path: '/dashboard', icon: <LayoutDashboard size={20} /> },
     { name: 'Book Appointment', path: '/book', icon: <Calendar size={20} /> },
     { name: 'My Appointments', path: '/appointments', icon: <Clock size={20} /> },
+    { name: 'Feedback', path: '/feedback', icon: <MessageSquare size={20} /> },
   ];
 
   const adminLinks = [

@@ -16,6 +16,8 @@ export const mockAppointments = [
   { id: 'a4', therapistId: 't3', therapistName: 'Dr. Emily Carter', date: '2026-05-25', time: '04:00 PM', status: 'Cancelled', type: 'Couples Therapy' },
 ];
 
+export const mockFeedbacks = [];
+
 export const mockNotifications = [
   { id: 'n1', title: 'Upcoming Appointment', message: 'You have a session with Dr. Sarah Jenkins tomorrow at 10:00 AM.', time: '2 hours ago', read: false, type: 'reminder' },
   { id: 'n2', title: 'Therapist Unavailable', message: 'Dr. James Wilson has cancelled appointments for today. Please reschedule.', time: '1 day ago', read: true, type: 'alert' },
