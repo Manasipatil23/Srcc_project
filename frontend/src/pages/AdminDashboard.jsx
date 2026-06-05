@@ -2,8 +2,10 @@ import React from 'react';
 import Card from '../components/ui/Card';
 import { Users, Calendar, Activity, ArrowRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 const AdminDashboard = () => {
+  const navigate = useNavigate();
   const { user } = useAuth();
 
   const stats = [
@@ -43,15 +45,71 @@ const AdminDashboard = () => {
             </div>
           </div>
         </Card>
-        
+
         <Card style={{ minHeight: '300px' }}>
           <h3 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1.5rem' }}>Quick Actions</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            {['Manage Therapists', 'View All Appointments', 'System Settings'].map((action, i) => (
-              <button key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', backgroundColor: 'var(--bg-main)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', cursor: 'pointer', color: 'var(--text-primary)', fontWeight: 500 }} className="hover-scale">
-                {action} <ArrowRight size={16} color="var(--text-light)" />
-              </button>
-            ))}
+
+            <button
+              onClick={() => navigate('/therapists')}
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '1rem',
+                backgroundColor: 'var(--bg-main)',
+                border: '1px solid var(--border)',
+                borderRadius: 'var(--radius-md)',
+                cursor: 'pointer',
+                color: 'var(--text-primary)',
+                fontWeight: 500
+              }}
+              className="hover-scale"
+            >
+              Manage Therapists
+              <ArrowRight size={16} color="var(--text-light)" />
+            </button>
+
+            <button
+              onClick={() => navigate('/appointments')}
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '1rem',
+                backgroundColor: 'var(--bg-main)',
+                border: '1px solid var(--border)',
+                borderRadius: 'var(--radius-md)',
+                cursor: 'pointer',
+                color: 'var(--text-primary)',
+                fontWeight: 500
+              }}
+              className="hover-scale"
+            >
+              View All Appointments
+              <ArrowRight size={16} color="var(--text-light)" />
+            </button>
+
+            <button
+              onClick={() => navigate('/settings')}
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '1rem',
+                backgroundColor: 'var(--bg-main)',
+                border: '1px solid var(--border)',
+                borderRadius: 'var(--radius-md)',
+                cursor: 'pointer',
+                color: 'var(--text-primary)',
+                fontWeight: 500
+              }}
+              className="hover-scale"
+            >
+              System Settings
+              <ArrowRight size={16} color="var(--text-light)" />
+            </button>
+
           </div>
         </Card>
       </div>

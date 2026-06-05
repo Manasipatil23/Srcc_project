@@ -12,6 +12,8 @@ const MyAppointments = () => {
 
   const [appointments, setAppointments] = useState(mockAppointments);
   const [activeTab, setActiveTab] = useState('Upcoming');
+  const [selectedTherapist, setSelectedTherapist] = useState('');
+  const [selectedDate, setSelectedDate] = useState('');
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [cancelReason, setCancelReason] = useState('');
@@ -21,30 +23,54 @@ const MyAppointments = () => {
     return savedFeedbacks ? JSON.parse(savedFeedbacks) : mockFeedbacks;
   });
 
-  const filteredAppointments = appointments.filter(apt => {
-    if (activeTab === 'Upcoming') return apt.status === 'Upcoming';
-    if (activeTab === 'Past') return apt.status === 'Completed';
-    if (activeTab === 'Cancelled') return apt.status === 'Cancelled';
+  const filteredAppointments = appointments.filter((apt) => {
+
+    if (
+      activeTab === 'Upcoming' &&
+      apt.status !== 'Upcoming'
+    )
+      return false;
+
+    if (
+      activeTab === 'Past' &&
+      apt.status !== 'Completed'
+    )
+      return false;
+
+    if (
+      activeTab === 'Cancelled' &&
+      apt.status !== 'Cancelled'
+    )
+      return false;
+
+    if (
+      selectedTherapist &&
+      apt.therapistName !== selectedTherapist
+    )
+      return false;
+
+    if (
+      selectedDate &&
+      apt.date !== selectedDate
+    )
+      return false;
+
     return true;
   });
 
   const handleCancelClick = (apt) => {
-  setSelectedAppointment(apt);
-  setCancelReason('');
-  setIsCancelModalOpen(true);
-};
+    setSelectedAppointment(apt);
+    setCancelReason('');
+    setIsCancelModalOpen(true);
+  };
 
   const confirmCancel = () => {
-  setAppointments(appointments.map(apt =>
-    apt.id === selectedAppointment.id
-      ? { ...apt, status: 'Cancelled', cancellationReason: cancelReason }
-      : apt
-  ));
-
-  setIsCancelModalOpen(false);
-  setSelectedAppointment(null);
-  setCancelReason('');
-};
+    setAppointments(appointments.map(apt =>
+      apt.id === selectedAppointment.id ? { ...apt, status: 'Cancelled' } : apt
+    ));
+    setIsCancelModalOpen(false);
+    setSelectedAppointment(null);
+  };
 
   const handleReschedule = (apt) => {
     navigate('/reschedule', { state: { appointment: apt } });
@@ -63,8 +89,81 @@ const MyAppointments = () => {
       <div>
         <h1 style={{ fontSize: '1.75rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>My Appointments</h1>
         <p style={{ color: 'var(--text-secondary)' }}>View and manage your upcoming and past sessions in timeline view.</p>
+        <Card
+          style={{
+            marginTop: '1rem',
+            padding: '1.25rem'
+          }}
+        >
+          <h3
+            style={{
+              fontSize: '1rem',
+              fontWeight: 600,
+              marginBottom: '0.5rem'
+            }}
+          >
+            Weekly Appointment Summary
+          </h3>
+
+          <p
+            style={{
+              fontSize: '2rem',
+              fontWeight: 'bold',
+              color: 'var(--primary)'
+            }}
+          >
+            {appointments.length}
+          </p>
+
+          <p style={{ color: 'var(--text-secondary)' }}>
+            Total appointments scheduled
+          </p>
+        </Card>
       </div>
 
+      <div
+        style={{
+          display: 'flex',
+          gap: '1rem',
+          alignItems: 'center',
+          flexWrap: 'wrap'
+        }}
+      >
+        {/* Week Filter */}
+        <select
+          className="input-field"
+          style={{ width: '200px' }}
+        >
+          <option>This Week</option>
+          <option>Next Week</option>
+          <option>All Appointments</option>
+        </select>
+
+        {/* Therapist Filter */}
+        <select
+          className="input-field"
+          value={selectedTherapist}
+          onChange={(e) => setSelectedTherapist(e.target.value)}
+          style={{ width: '220px' }}
+        >
+          <option value="">All Therapists</option>
+
+          {[...new Set(appointments.map(a => a.therapistName))].map(name => (
+            <option key={name} value={name}>
+              {name}
+            </option>
+          ))}
+        </select>
+
+        {/* Date Filter */}
+        <input
+          type="date"
+          className="input-field"
+          value={selectedDate}
+          onChange={(e) => setSelectedDate(e.target.value)}
+          style={{ width: '220px' }}
+        />
+      </div>
       <div style={{ display: 'flex', gap: '1rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem' }}>
         {['Upcoming', 'Past', 'Cancelled'].map(tab => (
           <button
@@ -110,12 +209,49 @@ const MyAppointments = () => {
               <Card style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', marginLeft: '1.5rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <div style={{ width: '48px', height: '48px', borderRadius: '50%', backgroundColor: 'var(--secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)' }}>
+                    <div
+                      style={{
+                        width: '48px',
+                        height: '48px',
+                        borderRadius: '50%',
+                        backgroundColor: 'var(--secondary)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'var(--primary)'
+                      }}
+                    >
                       <User size={24} />
                     </div>
+
                     <div>
-                      <h3 style={{ fontSize: '1.125rem', fontWeight: 600 }}>{apt.therapistName}</h3>
-                      <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>{apt.type}</p>
+                      <h3
+                        style={{
+                          fontSize: '1.125rem',
+                          fontWeight: 600
+                        }}
+                      >
+                        {apt.therapistName}
+                      </h3>
+
+                      <p
+                        style={{
+                          color: 'var(--primary)',
+                          fontSize: '0.875rem',
+                          fontWeight: 500
+                        }}
+                      >
+                        Patient: {apt.patientName}
+                      </p>
+
+                      <p
+                        style={{
+                          color: 'var(--text-secondary)',
+                          fontSize: '0.875rem'
+                        }}
+                      >
+                        {apt.type}
+                      </p>
                     </div>
                   </div>
 
@@ -192,37 +328,37 @@ const MyAppointments = () => {
           </div>
 
           <div>
-  <label style={{
-    display: 'block',
-    marginBottom: '0.5rem',
-    fontWeight: 600,
-    fontSize: '0.875rem',
-    color: 'var(--text-primary)'
-  }}>
-    Reason for cancellation
-  </label>
+            <label style={{
+              display: 'block',
+              marginBottom: '0.5rem',
+              fontWeight: 600,
+              fontSize: '0.875rem',
+              color: 'var(--text-primary)'
+            }}>
+              Reason for cancellation
+            </label>
 
-  <textarea
-    rows={4}
-    className="input-field"
-    placeholder="Please mention why you want to cancel this appointment"
-    value={cancelReason}
-    onChange={(e) => setCancelReason(e.target.value)}
-  />
-</div>
+            <textarea
+              rows={4}
+              className="input-field"
+              placeholder="Please mention why you want to cancel this appointment"
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+            />
+          </div>
 
           <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
             <Button variant="outline" onClick={() => setIsCancelModalOpen(false)}>Keep Appointment</Button>
             <Button
-             variant="danger"
-             onClick={confirmCancel}
-             disabled={!cancelReason.trim()}
+              variant="danger"
+              onClick={confirmCancel}
+              disabled={!cancelReason.trim()}
             >
-  Yes, Cancel
-</Button>
+              Yes, Cancel
+            </Button>
           </div>
         </div>
-        
+
       </Modal>
     </div>
   );

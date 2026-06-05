@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Search, Bell, User, Sun, Moon, FileText, ChevronDown, Download, Upload, LogOut } from 'lucide-react';
+import React from 'react';
+import { Bell, User, Sun, Moon, FileText, ChevronDown, Download, Upload, LogOut } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import { mockPatientProfile } from '../../data/mockData';
@@ -26,23 +26,13 @@ const TopNavbar = () => {
       borderBottom: '1px solid var(--border)',
       display: 'flex',
       alignItems: 'center',
-      justifyContent: 'space-between',
+      justifyContent: 'flex-end',
       padding: '0 2rem',
       position: 'sticky',
       top: 0,
       zIndex: 10,
       transition: 'background-color var(--transition-normal), border-color var(--transition-normal)'
     }}>
-      <div style={{ position: 'relative', width: '300px' }}>
-        <Search size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-light)' }} />
-        <input 
-          type="text" 
-          placeholder="Search..." 
-          className="input-field"
-          style={{ paddingLeft: '2.5rem', backgroundColor: 'var(--bg-main)', border: 'none' }}
-        />
-      </div>
-
       <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
         
         {/* Theme Toggle */}
@@ -61,12 +51,25 @@ const TopNavbar = () => {
         {/* Notifications */}
         <div onClick={() => navigate('/notifications')} style={{ position: 'relative', cursor: 'pointer', color: 'var(--text-secondary)', padding: '0.5rem', borderRadius: '50%' }} className="btn-ghost">
           <Bell size={24} />
-          <span style={{
-            position: 'absolute', top: '0', right: '0',
-            width: '10px', height: '10px', backgroundColor: 'var(--error)',
-            borderRadius: '50%', border: '2px solid var(--bg-surface)',
-            transition: 'border-color var(--transition-normal)'
-          }}></span>
+          <span
+  style={{
+    position: 'absolute',
+    top: '-4px',
+    right: '-4px',
+    minWidth: '18px',
+    height: '18px',
+    backgroundColor: 'var(--error)',
+    borderRadius: '50%',
+    color: 'white',
+    fontSize: '10px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontWeight: 'bold'
+  }}
+>
+  5
+</span>
         </div>
         
         {/* Profile Link & Logout */}

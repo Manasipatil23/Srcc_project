@@ -1,6 +1,10 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
+<<<<<<< HEAD
 import { Calendar, LayoutDashboard, Users, Clock, LogOut, MessageSquare } from 'lucide-react';
+=======
+import { Calendar, LayoutDashboard, Users, Clock, Bell, LogOut, AlarmClock } from 'lucide-react';
+>>>>>>> 1b269ef (Improved Admin Dashboard.)
 import { useAuth } from '../../context/AuthContext';
 
 const Sidebar = () => {
@@ -11,13 +15,21 @@ const Sidebar = () => {
     { name: 'Dashboard', path: '/dashboard', icon: <LayoutDashboard size={20} /> },
     { name: 'Book Appointment', path: '/book', icon: <Calendar size={20} /> },
     { name: 'My Appointments', path: '/appointments', icon: <Clock size={20} /> },
+<<<<<<< HEAD
     { name: 'Feedback', path: '/feedback', icon: <MessageSquare size={20} /> },
+=======
+    { name: 'Notifications', path: '/notifications', icon: <Bell size={20} /> },
+>>>>>>> 1b269ef (Improved Admin Dashboard.)
   ];
 
   const adminLinks = [
     { name: 'Dashboard', path: '/admin-dashboard', icon: <LayoutDashboard size={20} /> },
     { name: 'Therapists', path: '/therapists', icon: <Users size={20} /> },
+    { name: 'Schedule Patient', path: '/schedule-patient', icon: <Calendar size={20} /> },
     { name: 'All Appointments', path: '/appointments', icon: <Calendar size={20} /> },
+    { name: 'Notifications', path: '/notifications', icon: <Bell size={20} /> },
+    { name: 'Reminders', path: '/admin-reminders', icon: <AlarmClock size={20} />
+}
   ];
 
   const navItems = isAdmin ? adminLinks : patientLinks;
