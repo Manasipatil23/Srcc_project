@@ -1,17 +1,18 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Calendar, LayoutDashboard, Users, Clock, Bell, LogOut, AlarmClock, MessageSquare } from 'lucide-react';
+import { Calendar, LayoutDashboard, Users, Clock, Bell, LogOut, AlarmClock, MessageSquare, CalendarCheck, CalendarOff, Settings } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 const Sidebar = () => {
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
+  const isTherapist = user?.role === 'therapist';
 
   const patientLinks = [
     { name: 'Dashboard', path: '/dashboard', icon: <LayoutDashboard size={20} /> },
     { name: 'Book Appointment', path: '/book', icon: <Calendar size={20} /> },
     { name: 'My Appointments', path: '/appointments', icon: <Clock size={20} /> },
-    { name: 'Feedback', path: '/feedback', icon: <MessageSquare size={20} /> },
+    { name: 'Feedback', path: '/feedback-form', icon: <MessageSquare size={20} /> },
     { name: 'Notifications', path: '/notifications', icon: <Bell size={20} /> },
   ];
 
@@ -20,13 +21,21 @@ const Sidebar = () => {
     { name: 'Therapists', path: '/therapists', icon: <Users size={20} /> },
     { name: 'Schedule Patient', path: '/schedule-patient', icon: <Calendar size={20} /> },
     { name: 'All Appointments', path: '/appointments', icon: <Calendar size={20} /> },
+    { name: 'Leave Requests', path: '/admin-leaves', icon: <CalendarOff size={20} /> },
     { name: 'Notifications', path: '/notifications', icon: <Bell size={20} /> },
-    {
-      name: 'Reminders', path: '/admin-reminders', icon: <AlarmClock size={20} />
-    }
+    { name: 'Reminders', path: '/admin-reminders', icon: <AlarmClock size={20} /> }
+  ];
+  const therapistLinks = [
+    { name: 'Dashboard', path: '/therapist/dashboard', icon: <LayoutDashboard size={20} /> },
+    { name: 'Calendar', path: '/therapist/calendar', icon: <Calendar size={20} /> },
+    { name: 'Appointments', path: '/therapist/appointments', icon: <Clock size={20} /> },
+    { name: 'Availability', path: '/therapist/availability', icon: <CalendarCheck size={20} /> },
+    { name: 'Leave Requests', path: '/therapist/leave', icon: <CalendarOff size={20} /> },
+    { name: 'Notifications', path: '/therapist/notifications', icon: <Bell size={20} /> },
+    { name: 'Settings', path: '/therapist/settings', icon: <Settings size={20} /> },
   ];
 
-  const navItems = isAdmin ? adminLinks : patientLinks;
+  const navItems = isAdmin ? adminLinks : isTherapist ? therapistLinks : patientLinks;
 
   return (
     <aside style={{

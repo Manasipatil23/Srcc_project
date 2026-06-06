@@ -35,7 +35,7 @@ const LandingPage = () => {
           <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Phone size={14} /> +91 8655998568/69 | +91 8655998570</span>
           <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Mail size={14} /> info@srcc.org.in</span>
         </div>
-        <div style={{ display: 'none', '@media (min-width: 768px)': { display: 'block' } }}>
+        <div className="header-tagline">
           <em>"Health, Hope and Happiness"</em>
         </div>
       </div>
@@ -56,8 +56,8 @@ const LandingPage = () => {
         </div>
         
         {/* Desktop Nav Links */}
-        <nav style={{ display: 'none', gap: '1.5rem', alignItems: 'center', '@media (min-width: 1024px)': { display: 'flex' } }}>
-          {['About', 'Services', 'Facilities', 'Events', 'Gallery', 'Contact'].map(link => (
+        <nav className="desktop-nav">
+          {['About', 'Services', 'Contact'].map(link => (
             <a key={link} href={`#${link.toLowerCase()}`} style={{ color: 'var(--text-primary)', fontWeight: 500, fontSize: '0.95rem' }} className="hover-opacity">
               {link}
             </a>
@@ -102,7 +102,7 @@ const LandingPage = () => {
 
       {/* History & Philosophy Section */}
       <section id="about" style={{ padding: '6rem 2rem', backgroundColor: 'var(--bg-surface)' }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr', gap: '4rem', '@media (min-width: 900px)': { gridTemplateColumns: '1fr 1fr' } }}>
+        <div className="about-grid">
           <motion.div initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}>
             <h2 style={{ fontSize: '2.5rem', fontWeight: 700, marginBottom: '1.5rem' }}>Welcome to SRCC</h2>
             <p style={{ color: 'var(--text-secondary)', fontSize: '1.125rem', lineHeight: 1.7, marginBottom: '1rem' }}>
@@ -135,11 +135,11 @@ const LandingPage = () => {
 
 
 
-      {/* Centre for Child Development */}
-      <section id="facilities" style={{ padding: '6rem 2rem', backgroundColor: 'var(--primary)', color: 'white' }}>
+      {/* Services Section */}
+      <section id="services" style={{ padding: '6rem 2rem', backgroundColor: 'var(--primary)', color: 'white' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} style={{ textAlign: 'center', marginBottom: '3rem' }}>
-            <h2 style={{ fontSize: '2.5rem', fontWeight: 700, marginBottom: '1.5rem' }}>SRCC Centre for Child Development</h2>
+            <h2 style={{ fontSize: '2.5rem', fontWeight: 700, marginBottom: '1.5rem' }}>SRCC Centre for Child Development (Services)</h2>
             <p style={{ fontSize: '1.125rem', opacity: 0.9, marginBottom: '2rem', lineHeight: 1.6, maxWidth: '800px', margin: '0 auto' }}>
               The Society has expanded its facilities to treat various ailments affecting children by establishing this Centre. It aims to be a one-stop-shop for children from different backgrounds and from across India by housing various physical and mental therapies and treatment solutions under one roof.
             </p>
@@ -171,6 +171,8 @@ const LandingPage = () => {
           </div>
         </div>
       </section>
+
+
 
       {/* Footer */}
       <footer id="contact" style={{ backgroundColor: '#1E293B', color: '#94A3B8', padding: '5rem 2rem 2rem' }}>
@@ -227,11 +229,7 @@ const LandingPage = () => {
         </div>
 
         {/* Legal & Copyright */}
-        <div style={{ 
-          maxWidth: '1200px', margin: '0 auto', paddingTop: '2rem', 
-          borderTop: '1px solid rgba(255,255,255,0.1)', display: 'flex', 
-          flexDirection: 'column', gap: '1rem', '@media (min-width: 768px)': { flexDirection: 'row', justifyContent: 'space-between' } 
-        }}>
+        <div className="footer-bottom">
           <div style={{ display: 'flex', gap: '1.5rem', fontSize: '0.875rem' }}>
             <a href="#" style={{ color: '#94A3B8', textDecoration: 'none' }}>Disclaimer</a>
             <a href="#" style={{ color: '#94A3B8', textDecoration: 'none' }}>Refund Policy</a>

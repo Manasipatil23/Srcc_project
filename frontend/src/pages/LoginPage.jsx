@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
-import { ArrowLeft, Eye, EyeOff, ShieldCheck, HeartPulse } from 'lucide-react';
+import { ArrowLeft, Eye, EyeOff, ShieldCheck, HeartPulse, Stethoscope } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const LoginPage = () => {
@@ -17,6 +17,7 @@ const LoginPage = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   const isAdmin = selectedRole === 'admin';
+  const isTherapist = selectedRole === 'therapist';
 
   const handleLogin = (e) => {
     e.preventDefault();
@@ -35,7 +36,7 @@ const LoginPage = () => {
       setIsLoading(false);
       // Mock login
       login(selectedRole, email);
-      navigate(isAdmin ? '/admin-dashboard' : '/dashboard');
+      navigate(isAdmin ? '/admin-dashboard' : isTherapist ? '/therapist/dashboard' : '/dashboard');
     }, 1000);
   };
 
@@ -69,14 +70,14 @@ const LoginPage = () => {
        overflow: 'hidden'
       }}>
           {/* Top colored accent based on role */}
-          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '6px', backgroundColor: isAdmin ? 'var(--accent)' : 'var(--primary)' }}></div>
+          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '6px', backgroundColor: isAdmin ? 'var(--accent)' : isTherapist ? '#8b5cf6' : 'var(--primary)' }}></div>
 
           <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
-            <div style={{ display: 'inline-flex', padding: '0.75rem', borderRadius: '50%', backgroundColor: isAdmin ? 'rgba(20, 184, 166, 0.1)' : 'var(--secondary)', marginBottom: '1rem' }}>
-              {isAdmin ? <ShieldCheck size={32} color="var(--accent)" /> : <HeartPulse size={32} color="var(--primary)" />}
+            <div style={{ display: 'inline-flex', padding: '0.75rem', borderRadius: '50%', backgroundColor: isAdmin ? 'rgba(20, 184, 166, 0.1)' : isTherapist ? 'rgba(139, 92, 246, 0.1)' : 'var(--secondary)', marginBottom: '1rem' }}>
+              {isAdmin ? <ShieldCheck size={32} color="var(--accent)" /> : isTherapist ? <Stethoscope size={32} color="#8b5cf6" /> : <HeartPulse size={32} color="var(--primary)" />}
             </div>
             <h1 style={{ color: 'var(--text-primary)', fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '0.25rem' }}>
-              {isAdmin ? 'Admin Portal' : 'Patient Portal'}
+              {isAdmin ? 'Admin Portal' : isTherapist ? 'Therapist Portal' : 'Patient Portal'}
             </h1>
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Therapy Appointment Management</p>
           </div>
@@ -93,7 +94,7 @@ const LoginPage = () => {
               <input 
                 type="email" 
                 className="input-field" 
-                placeholder={isAdmin ? "admin@srcc.org.in" : "Enter your email"} 
+                placeholder={isAdmin ? "admin@srcc.org.in" : isTherapist ? "therapist@srcc.org.in" : "Enter your email"} 
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
@@ -125,7 +126,7 @@ const LoginPage = () => {
               <a href="#" style={{ color: 'var(--primary)', fontWeight: 500 }}>Forgot password?</a>
             </div>
 
-            <Button type="submit" variant={isAdmin ? "secondary" : "primary"} size="lg" className="w-full mt-4" disabled={isLoading}>
+            <Button type="submit" variant="primary" size="lg" className="w-full mt-4" disabled={isLoading} style={{ backgroundColor: isAdmin ? 'var(--accent)' : isTherapist ? '#8b5cf6' : 'var(--primary)', borderColor: 'transparent' }}>
               {isLoading ? 'Signing in...' : 'Sign In'}
             </Button>
           </form>

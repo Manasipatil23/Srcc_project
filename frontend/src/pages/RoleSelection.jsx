@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import Card from '../components/ui/Card';
-import { User, Stethoscope, ArrowRight, HeartPulse } from 'lucide-react';
+import { User, Stethoscope, ArrowRight, HeartPulse, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const RoleSelection = () => {
@@ -70,6 +70,29 @@ const RoleSelection = () => {
 
         <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.98 }}>
           <Card 
+            onClick={() => handleRoleSelect('therapist')}
+            style={{ 
+              width: '300px', height: '300px', display: 'flex', flexDirection: 'column', 
+              alignItems: 'center', justifyContent: 'center', cursor: 'pointer', gap: '1.5rem',
+              border: '2px solid transparent', transition: 'all 0.2s ease'
+            }}
+            className="hover-bg-main"
+          >
+            <div style={{ width: '80px', height: '80px', borderRadius: '50%', backgroundColor: 'rgba(139, 92, 246, 0.15)', color: '#8b5cf6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Stethoscope size={40} />
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <h3 style={{ fontSize: '1.5rem', fontWeight: 600, marginBottom: '0.5rem' }}>Therapist</h3>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Manage your schedule and appointments.</p>
+            </div>
+            <div style={{ color: '#8b5cf6', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600, marginTop: 'auto' }}>
+              Continue <ArrowRight size={18} />
+            </div>
+          </Card>
+        </motion.div>
+
+        <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.98 }}>
+          <Card 
             onClick={() => handleRoleSelect('admin')}
             style={{ 
               width: '300px', height: '300px', display: 'flex', flexDirection: 'column', 
@@ -79,7 +102,7 @@ const RoleSelection = () => {
             className="hover-bg-main"
           >
             <div style={{ width: '80px', height: '80px', borderRadius: '50%', backgroundColor: 'rgba(20, 184, 166, 0.15)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Stethoscope size={40} />
+              <ShieldCheck size={40} />
             </div>
             <div style={{ textAlign: 'center' }}>
               <h3 style={{ fontSize: '1.5rem', fontWeight: 600, marginBottom: '0.5rem' }}>Hospital Admin</h3>

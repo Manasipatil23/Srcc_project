@@ -15,8 +15,8 @@ const Dashboard = () => {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
         <div>
-          <h1 style={{ fontSize: '1.75rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>Welcome back, John!</h1>
-          <p style={{ color: 'var(--text-secondary)' }}>Here is your overview for today.</p>
+          <h1 style={{ fontSize: '1.75rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>Patient Dashboard</h1>
+          <p style={{ color: 'var(--text-secondary)' }}>Welcome back, John! Here is your overview for today.</p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--success)', backgroundColor: 'var(--success-bg)', padding: '0.5rem 1rem', borderRadius: 'var(--radius-full)', fontWeight: 500, fontSize: '0.875rem' }}>
           <TrendingUp size={16} />

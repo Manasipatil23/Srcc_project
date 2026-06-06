@@ -21,6 +21,13 @@ import SchedulePatient from './pages/SchedulePatient';
 import SystemSettings from './pages/SystemSettings';
 import FeedbackForm from './pages/FeedbackForm';
 import FeedbackHistory from './pages/FeedbackHistory';
+import TherapistDashboard from './pages/therapist/TherapistDashboard';
+import TherapistCalendar from './pages/therapist/TherapistCalendar';
+import TherapistAppointments from './pages/therapist/TherapistAppointments';
+import TherapistAvailability from './pages/therapist/TherapistAvailability';
+import TherapistLeave from './pages/therapist/TherapistLeave';
+import TherapistSettings from './pages/therapist/TherapistSettings';
+import AdminLeaves from './pages/AdminLeaves';
 
 function App() {
   return (
@@ -35,6 +42,8 @@ function App() {
           <Route element={<Layout />}>
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/admin-dashboard" element={<AdminDashboard />} />
+            <Route path="/admin-reminders" element={<AdminReminders />} />
+            <Route path="/admin-leaves" element={<AdminLeaves />} />
             <Route path="/book" element={<AppointmentBooking />} />
             <Route path="/appointments" element={<MyAppointments />} />
             <Route path="/therapists" element={<TherapistsManagement />} />
@@ -49,6 +58,13 @@ function App() {
             <Route path="/settings" element={<SystemSettings />} />
             <Route path="/feedback-form" element={<FeedbackForm />} />
             <Route path="/feedback-history" element={<FeedbackHistory />} />
+            <Route path="/therapist/dashboard" element={<TherapistDashboard />} />
+            <Route path="/therapist/calendar" element={<TherapistCalendar />} />
+            <Route path="/therapist/appointments" element={<TherapistAppointments />} />
+            <Route path="/therapist/availability" element={<TherapistAvailability />} />
+            <Route path="/therapist/leave" element={<TherapistLeave />} />
+            <Route path="/therapist/settings" element={<TherapistSettings />} />
+            <Route path="/therapist/notifications" element={<Notifications />} />
           </Route>
         </Routes>
       </AuthProvider>

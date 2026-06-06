@@ -129,7 +129,8 @@ const AppointmentBooking = () => {
                   <div>
                     <label style={{ display: 'block', marginBottom: '0.75rem', fontWeight: 500 }}>Available Slots</label>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: '0.75rem' }}>
-                      {timeSlots.map(slot => {
+                      {timeSlots.map(slotObj => {
+                        const slot = slotObj.time;
                         const isAvailable = slotAvailability[slot];
                         return (
                          <button

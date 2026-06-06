@@ -1,12 +1,4 @@
 import React, { useState, useEffect } from 'react';
-useEffect(() => {
-  if (!localStorage.getItem('therapists')) {
-    localStorage.setItem(
-      'therapists',
-      JSON.stringify(mockTherapists)
-    );
-  }
-}, []);
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import { mockTherapists } from '../data/mockData';
@@ -34,6 +26,15 @@ const TherapistsManagement = () => {
   const [newExperience, setNewExperience] = useState('');
   const [newEmail, setNewEmail] = useState('');
   const [newPhone, setNewPhone] = useState('');
+
+  useEffect(() => {
+    if (!localStorage.getItem('therapists')) {
+      localStorage.setItem(
+        'therapists',
+        JSON.stringify(mockTherapists)
+      );
+    }
+  }, []);
 
   const handleRemoveClick = (therapist) => {
     setSelectedTherapist(therapist);
@@ -120,52 +121,25 @@ const TherapistsManagement = () => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-        <div>
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              gap: '2rem'
-            }}
-          >
-            <div>
-              <h1
-                style={{
-                  fontSize: '1.75rem',
-                  fontWeight: 'bold',
-                  marginBottom: '0.5rem'
-                }}
-              >
-                Our Therapists
-              </h1>
-            </div>
-
-            <Button
-              style={{
-                marginLeft: '34rem'
-              }}
-              onClick={() => {
-                console.log("ADD CLICKED");
-                setIsAddModalOpen(true);
-              }}
-
-            >
-              + Add Therapist
-            </Button>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
+          <div>
+            <h1 style={{ fontSize: '1.75rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>Our Therapists</h1>
+            <p style={{ color: 'var(--text-secondary)' }}>Find and manage therapy professionals.</p>
           </div>
-          <p style={{ color: 'var(--text-secondary)' }}>Find and manage therapy professionals.</p>
+          <Button onClick={() => setIsAddModalOpen(true)}>
+            + Add Therapist
+          </Button>
         </div>
 
-        <div style={{ display: 'flex', gap: '1rem' }}>
-          <div style={{ position: 'relative', width: '250px' }}>
+        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+          <div style={{ position: 'relative', flex: '1', minWidth: '250px' }}>
             <Search size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-light)' }} />
             <input
               type="text"
               placeholder="Search therapists..."
               className="input-field"
-              style={{ paddingLeft: '2.5rem' }}
+              style={{ paddingLeft: '2.5rem', width: '100%' }}
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
             />
@@ -174,7 +148,7 @@ const TherapistsManagement = () => {
             className="input-field"
             value={specialtyFilter}
             onChange={(e) => setSpecialtyFilter(e.target.value)}
-            style={{ minWidth: '220px' }}
+            style={{ minWidth: '220px', width: 'auto' }}
           >
             <option value="">All Specialties</option>
             <option value="Clinical Psychologist">Clinical Psychologist</option>
@@ -193,7 +167,7 @@ const TherapistsManagement = () => {
             className="input-field"
             value={availabilityFilter}
             onChange={(e) => setAvailabilityFilter(e.target.value)}
-            style={{ minWidth: '180px' }}
+            style={{ minWidth: '180px', width: 'auto' }}
           >
             <option value="">All Status</option>
             <option value="Available">Available</option>
