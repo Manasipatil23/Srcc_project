@@ -19,10 +19,10 @@ const LoginPage = () => {
   const isAdmin = selectedRole === 'admin';
   const isTherapist = selectedRole === 'therapist';
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
-    
+
     // Basic Validation
     if (!email || !password) {
       setError('Please fill in all fields.');
@@ -30,14 +30,14 @@ const LoginPage = () => {
     }
 
     setIsLoading(true);
-    
-    // Simulate network request
-    setTimeout(() => {
-      setIsLoading(false);
-      // Mock login
-      login(selectedRole, email);
+    try {
+      await login(selectedRole, email, password);
       navigate(isAdmin ? '/admin-dashboard' : isTherapist ? '/therapist/dashboard' : '/dashboard');
-    }, 1000);
+    } catch (err) {
+      setError(err.message || 'Login failed. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

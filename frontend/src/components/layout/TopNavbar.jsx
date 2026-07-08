@@ -1,23 +1,36 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Bell, User, Sun, Moon, FileText, ChevronDown, Download, Upload, LogOut } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
-import { mockPatientProfile } from '../../data/mockData';
+import { notificationApi } from '../../services/api';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 const TopNavbar = () => {
   const { isDark, toggleTheme } = useTheme();
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    if (!user) {
+      setUnreadCount(0);
+      return;
+    }
+    notificationApi
+      .getForUser(user.id)
+      .then((list) => setUnreadCount(list.filter((n) => !n.read).length))
+      .catch(() => setUnreadCount(0));
+  }, [user, location.pathname]);
 
   const handleLogout = () => {
     logout();
     navigate('/login');
   };
 
-  const displayName = user?.name || mockPatientProfile.name;
-  const displayRole = user?.role === 'admin' ? 'Hospital Admin' : 'Patient';
+  const displayName = user?.name || 'Guest';
+  const displayRole = user?.role === 'admin' ? 'Hospital Admin' : user?.role === 'therapist' ? 'Therapist' : 'Patient';
 
   return (
     <header style={{
@@ -51,25 +64,27 @@ const TopNavbar = () => {
         {/* Notifications */}
         <div onClick={() => navigate('/notifications')} style={{ position: 'relative', cursor: 'pointer', color: 'var(--text-secondary)', padding: '0.5rem', borderRadius: '50%' }} className="btn-ghost">
           <Bell size={24} />
-          <span
-  style={{
-    position: 'absolute',
-    top: '-4px',
-    right: '-4px',
-    minWidth: '18px',
-    height: '18px',
-    backgroundColor: 'var(--error)',
-    borderRadius: '50%',
-    color: 'white',
-    fontSize: '10px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontWeight: 'bold'
-  }}
->
-  5
-</span>
+          {unreadCount > 0 && (
+            <span
+              style={{
+                position: 'absolute',
+                top: '-4px',
+                right: '-4px',
+                minWidth: '18px',
+                height: '18px',
+                backgroundColor: 'var(--error)',
+                borderRadius: '50%',
+                color: 'white',
+                fontSize: '10px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: 'bold'
+              }}
+            >
+              {unreadCount}
+            </span>
+          )}
         </div>
         
         {/* Profile Link & Logout */}

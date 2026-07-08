@@ -1,26 +1,48 @@
 import React, { createContext, useContext, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { authApi } from '../services/api';
 
 const AuthContext = createContext();
 
+const STORED_USER_KEY = 'srcc_user';
+
+const getStoredUser = () => {
+  try {
+    const raw = localStorage.getItem(STORED_USER_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+};
+
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null); // null means not logged in
+  const [user, setUser] = useState(getStoredUser);
   const [selectedRole, setSelectedRole] = useState('patient'); // default
 
-  // Fake login function
-  const login = (role, email) => {
-    let name = 'John Doe';
-    if (role === 'admin') name = 'Hospital Admin';
-    if (role === 'therapist') name = 'Dr. Sarah Jenkins'; // Mock therapist name
-    setUser({ role, email, name });
+  // Real login against the backend. Throws on bad credentials or role mismatch.
+  const login = async (role, email, password) => {
+    const res = await authApi.login({ email, password });
+    if (res.user.role !== role) {
+      throw new Error(`This account is registered as '${res.user.role}', not '${role}'. Please pick the correct role.`);
+    }
+    authApi.saveToken(res.token);
+    localStorage.setItem(STORED_USER_KEY, JSON.stringify(res.user));
+    setUser(res.user);
+    return res.user;
+  };
+
+  const register = async (payload) => {
+    const res = await authApi.register(payload);
+    return res.user;
   };
 
   const logout = () => {
+    authApi.clearToken();
+    localStorage.removeItem(STORED_USER_KEY);
     setUser(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, selectedRole, setSelectedRole, login, logout }}>
+    <AuthContext.Provider value={{ user, selectedRole, setSelectedRole, login, register, logout }}>
       {children}
     </AuthContext.Provider>
   );

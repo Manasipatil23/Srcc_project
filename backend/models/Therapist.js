@@ -1,0 +1,35 @@
+import mongoose from 'mongoose';
+
+const therapistSchema = new mongoose.Schema(
+  {
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    name: { type: String, required: true, trim: true },
+    email: { type: String, required: true, lowercase: true, trim: true },
+    specialty: { type: String, required: [true, 'Specialty is required'], trim: true },
+    qualification: { type: String, required: [true, 'Qualification is required'], trim: true },
+    experience: { type: Number, required: true, min: 0 },
+    availability: {
+      type: String,
+      enum: ['Available', 'Busy', 'Unavailable'],
+      default: 'Available',
+    },
+    phone: { type: String, required: true, trim: true },
+    patientsCount: { type: Number, default: 0, min: 0 },
+    rating: { type: Number, default: 5.0, min: 0, max: 5 },
+    image: { type: String, default: '' },
+  },
+  { timestamps: true }
+);
+
+therapistSchema.set('toJSON', {
+  virtuals: true,
+  versionKey: false,
+  transform: (_doc, ret) => {
+    ret.id = ret._id.toString();
+    delete ret._id;
+    return ret;
+  },
+});
+
+const Therapist = mongoose.model('Therapist', therapistSchema);
+export default Therapist;

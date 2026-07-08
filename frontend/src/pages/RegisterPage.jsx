@@ -8,7 +8,7 @@ import { useAuth } from '../context/AuthContext';
 
 const RegisterPage = () => {
   const navigate = useNavigate();
-  const { selectedRole } = useAuth();
+  const { selectedRole, register } = useAuth();
 
   const [formData, setFormData] = useState({
     name: '',
@@ -81,7 +81,7 @@ const RegisterPage = () => {
     }
   };
 
-  const handleRegister = (e) => {
+  const handleRegister = async (e) => {
     e.preventDefault();
     setError('');
 
@@ -101,11 +101,21 @@ const RegisterPage = () => {
     }
 
     setIsLoading(true);
-
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      await register({
+        name: formData.name,
+        email: formData.email,
+        password: formData.password,
+        role: selectedRole === 'admin' ? 'admin' : 'patient',
+        phone: formData.phone,
+        dob: formData.dob,
+      });
       navigate('/login');
-    }, 1200);
+    } catch (err) {
+      setError(err.message || 'Registration failed. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

@@ -1,43 +1,56 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
-import { mockTherapists, timeSlots } from '../data/mockData';
+import { useAuth } from '../context/AuthContext';
+import { therapistApi, scheduleApi, appointmentApi } from '../services/api';
 import { Calendar as CalendarIcon, Clock, User, CheckCircle, ChevronRight, ChevronLeft, Star } from 'lucide-react';
 
 const AppointmentBooking = () => {
+  const { user } = useAuth();
   const [step, setStep] = useState(1);
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTherapist, setSelectedTherapist] = useState(null);
   const [selectedSlot, setSelectedSlot] = useState(null);
-  const slotAvailability = {
-  '09:00 AM': true,
-  '09:30 AM': true,
-  '10:00 AM': false,
-  '10:30 AM': true,
-  '11:00 AM': false,
-  '11:30 AM': true,
-  '01:00 PM': true,
-  '01:30 PM': false,
-  '02:00 PM': true,
-  '02:30 PM': true,
-  '03:00 PM': false,
-  '03:30 PM': true,
-  '04:00 PM': true,
-  '04:30 PM': false
-};
+  const [therapists, setTherapists] = useState([]);
+  const [slotsByTherapist, setSlotsByTherapist] = useState({});
+  const [bookingError, setBookingError] = useState('');
+
+  useEffect(() => {
+    therapistApi.getAll().then(setTherapists).catch(() => setTherapists([]));
+    scheduleApi.getTherapistSlots().then(setSlotsByTherapist).catch(() => setSlotsByTherapist({}));
+  }, []);
+
+  const therapistSlots = selectedTherapist
+    ? slotsByTherapist[selectedTherapist.name] || []
+    : [];
 
   const nextStep = () => setStep(prev => Math.min(prev + 1, 4));
   const prevStep = () => setStep(prev => Math.max(prev - 1, 1));
 
-  const handleBook = () => {
-    nextStep(); // Move to success step
-    setTimeout(() => {
-      setStep(1);
-      setSelectedDate('');
-      setSelectedTherapist(null);
-      setSelectedSlot(null);
-    }, 4000);
+  const handleBook = async () => {
+    setBookingError('');
+    try {
+      await appointmentApi.book({
+        therapistId: selectedTherapist.id,
+        patientId: user?.id,
+        patientName: user?.name || 'Guest Patient',
+        date: selectedDate,
+        time: selectedSlot,
+        type: 'Consultation',
+      });
+      // Refresh slot availability so the booked slot shows as taken
+      scheduleApi.getTherapistSlots().then(setSlotsByTherapist).catch(() => {});
+      nextStep(); // Move to success step
+      setTimeout(() => {
+        setStep(1);
+        setSelectedDate('');
+        setSelectedTherapist(null);
+        setSelectedSlot(null);
+      }, 4000);
+    } catch (err) {
+      setBookingError(err.message || 'Booking failed. Please try again.');
+    }
   };
 
   const stepVariants = {
@@ -75,7 +88,7 @@ const AppointmentBooking = () => {
             <motion.div key="step1" variants={stepVariants} initial="hidden" animate="visible" exit="exit" style={{ flex: 1 }}>
               <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1.5rem' }}>Select Therapist</h2>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '1rem', maxHeight: '400px', overflowY: 'auto' }} className="no-scrollbar">
-                {mockTherapists.map(therapist => (
+                {therapists.map(therapist => (
                   <div 
                     key={therapist.id} 
                     onClick={() => setSelectedTherapist(therapist)}
@@ -129,9 +142,9 @@ const AppointmentBooking = () => {
                   <div>
                     <label style={{ display: 'block', marginBottom: '0.75rem', fontWeight: 500 }}>Available Slots</label>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: '0.75rem' }}>
-                      {timeSlots.map(slotObj => {
+                      {therapistSlots.map(slotObj => {
                         const slot = slotObj.time;
-                        const isAvailable = slotAvailability[slot];
+                        const isAvailable = slotObj.available;
                         return (
                          <button
                            key={slot}
@@ -213,6 +226,13 @@ const AppointmentBooking = () => {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Booking error */}
+        {step === 3 && bookingError && (
+          <div style={{ marginTop: '1rem', padding: '0.75rem', backgroundColor: 'var(--error-bg)', color: 'var(--error)', borderRadius: 'var(--radius-md)', fontSize: '0.875rem', border: '1px solid var(--error)' }}>
+            {bookingError}
+          </div>
+        )}
 
         {/* Navigation Buttons */}
         {step < 4 && (

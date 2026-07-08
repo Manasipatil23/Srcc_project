@@ -1,10 +1,33 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
-import { mockPatientProfile } from '../data/mockData';
+import { useAuth } from '../context/AuthContext';
+import { patientApi } from '../services/api';
 import { User, Mail, Phone, Calendar, Activity, FileText, Download, Upload, Shield } from 'lucide-react';
 
+const EMPTY_PROFILE = {
+  id: '',
+  name: '',
+  age: 0,
+  dob: '—',
+  gender: '—',
+  bloodGroup: '—',
+  contact: '—',
+  documents: [],
+};
+
 const ProfilePage = () => {
+  const { user } = useAuth();
+  const [profile, setProfile] = useState(EMPTY_PROFILE);
+
+  useEffect(() => {
+    if (!user) return;
+    patientApi
+      .getById(user.id)
+      .then(setProfile)
+      .catch(() => setProfile({ ...EMPTY_PROFILE, name: user.name }));
+  }, [user]);
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', maxWidth: '1000px', margin: '0 auto' }}>
       <div>
@@ -21,8 +44,8 @@ const ProfilePage = () => {
               <User size={48} />
             </div>
             <div style={{ zIndex: 1 }}>
-              <h2 style={{ fontSize: '1.5rem', fontWeight: 600 }}>{mockPatientProfile.name}</h2>
-              <p style={{ color: 'var(--text-secondary)' }}>Patient ID: #{mockPatientProfile.id.toUpperCase()}-0932</p>
+              <h2 style={{ fontSize: '1.5rem', fontWeight: 600 }}>{profile.name || user?.name}</h2>
+              <p style={{ color: 'var(--text-secondary)' }}>Patient ID: #{(profile.id || 'new').slice(-6).toUpperCase()}</p>
             </div>
             <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem', zIndex: 1 }}>
               <span style={{ padding: '0.25rem 0.75rem', backgroundColor: 'var(--success-bg)', color: 'var(--success)', borderRadius: 'var(--radius-full)', fontSize: '0.75rem', fontWeight: 600 }}>Active Patient</span>
@@ -38,7 +61,7 @@ const ProfilePage = () => {
               </div>
               <div>
                 <p style={{ fontSize: '0.75rem', color: 'var(--text-light)' }}>Phone Number</p>
-                <p style={{ fontWeight: 500 }}>{mockPatientProfile.contact}</p>
+                <p style={{ fontWeight: 500 }}>{profile.contact || '—'}</p>
               </div>
             </div>
 
@@ -48,7 +71,7 @@ const ProfilePage = () => {
               </div>
               <div>
                 <p style={{ fontSize: '0.75rem', color: 'var(--text-light)' }}>Email Address</p>
-                <p style={{ fontWeight: 500 }}>{mockPatientProfile.name.toLowerCase().replace(' ', '.')}@example.com</p>
+                <p style={{ fontWeight: 500 }}>{user?.email}</p>
               </div>
             </div>
             
@@ -69,19 +92,19 @@ const ProfilePage = () => {
               <div style={{ padding: '1rem', backgroundColor: 'var(--bg-main)', borderRadius: 'var(--radius-md)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 <Calendar size={20} color="var(--primary)" />
                 <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Age / DOB</p>
-                <p style={{ fontWeight: 600, fontSize: '1.125rem' }}>{mockPatientProfile.age} yrs <span style={{ fontSize: '0.875rem', color: 'var(--text-light)', fontWeight: 400 }}>({mockPatientProfile.dob})</span></p>
+                <p style={{ fontWeight: 600, fontSize: '1.125rem' }}>{profile.age} yrs <span style={{ fontSize: '0.875rem', color: 'var(--text-light)', fontWeight: 400 }}>({profile.dob || '—'})</span></p>
               </div>
 
               <div style={{ padding: '1rem', backgroundColor: 'var(--bg-main)', borderRadius: 'var(--radius-md)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 <User size={20} color="var(--primary)" />
                 <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Gender</p>
-                <p style={{ fontWeight: 600, fontSize: '1.125rem' }}>{mockPatientProfile.gender}</p>
+                <p style={{ fontWeight: 600, fontSize: '1.125rem' }}>{profile.gender || '—'}</p>
               </div>
 
               <div style={{ padding: '1rem', backgroundColor: 'var(--bg-main)', borderRadius: 'var(--radius-md)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 <Activity size={20} color="var(--error)" />
                 <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Blood Group</p>
-                <p style={{ fontWeight: 600, fontSize: '1.125rem', color: 'var(--error)' }}>{mockPatientProfile.bloodGroup}</p>
+                <p style={{ fontWeight: 600, fontSize: '1.125rem', color: 'var(--error)' }}>{profile.bloodGroup || '—'}</p>
               </div>
             </div>
           </Card>
@@ -98,7 +121,7 @@ const ProfilePage = () => {
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              {mockPatientProfile.documents.map(doc => (
+              {profile.documents.map(doc => (
                 <div key={doc.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem', backgroundColor: 'var(--bg-main)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }} className="hover-scale">
                   <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                     <div style={{ width: '40px', height: '40px', borderRadius: 'var(--radius-sm)', backgroundColor: 'var(--secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)' }}>

@@ -1,12 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Card from '../components/ui/Card';
 import EmptyState from '../components/ui/EmptyState';
-import { mockNotifications } from '../data/mockData';
+import { useAuth } from '../context/AuthContext';
+import { notificationApi } from '../services/api';
 import { Bell, Calendar, AlertTriangle, CheckCircle, Trash2 } from 'lucide-react';
 
 const Notifications = () => {
-  const [notifications, setNotifications] = useState(mockNotifications);
+  const { user } = useAuth();
+  const [notifications, setNotifications] = useState([]);
+
+  useEffect(() => {
+    if (!user) return;
+    notificationApi
+      .getForUser(user.id)
+      .then(setNotifications)
+      .catch(() => setNotifications([]));
+  }, [user]);
 
   const getIcon = (type) => {
     switch(type) {
@@ -26,12 +36,28 @@ const Notifications = () => {
     }
   };
 
-  const markAsRead = (id) => {
+  const markAsRead = async (id) => {
     setNotifications(notifications.map(n => n.id === id ? { ...n, read: true } : n));
+    try {
+      await notificationApi.markAsRead(id);
+    } catch {
+      // keep optimistic state; will resync on next load
+    }
   };
 
-  const deleteNotification = (id) => {
+  const deleteNotification = async (id) => {
     setNotifications(notifications.filter(n => n.id !== id));
+    try {
+      await notificationApi.remove(id);
+    } catch {
+      // keep optimistic state; will resync on next load
+    }
+  };
+
+  const markAllAsRead = () => {
+    const unread = notifications.filter(n => !n.read);
+    setNotifications(notifications.map(n => ({ ...n, read: true })));
+    unread.forEach(n => notificationApi.markAsRead(n.id).catch(() => {}));
   };
 
   return (
@@ -42,7 +68,7 @@ const Notifications = () => {
           <p style={{ color: 'var(--text-secondary)' }}>Stay updated with your appointments and alerts.</p>
         </div>
         {notifications.length > 0 && (
-          <button style={{ color: 'var(--primary)', fontWeight: 500, fontSize: '0.875rem' }} onClick={() => setNotifications(notifications.map(n => ({...n, read: true})))}>
+          <button style={{ color: 'var(--primary)', fontWeight: 500, fontSize: '0.875rem' }} onClick={markAllAsRead}>
             Mark all as read
           </button>
         )}

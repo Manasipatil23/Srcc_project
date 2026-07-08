@@ -1,16 +1,26 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Modal from '../components/ui/Modal';
-import { mockAppointments, mockFeedbacks } from '../data/mockData';
+import { useAuth } from '../context/AuthContext';
+import { appointmentApi } from '../services/api';
 import { Calendar, Clock, User, AlertCircle, MapPin } from 'lucide-react';
 
 const MyAppointments = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
 
-  const [appointments, setAppointments] = useState(mockAppointments);
+  const [appointments, setAppointments] = useState([]);
+
+  useEffect(() => {
+    if (!user) return;
+    appointmentApi
+      .getAll({ userId: user.id })
+      .then(setAppointments)
+      .catch(() => setAppointments([]));
+  }, [user]);
   const [activeTab, setActiveTab] = useState('Upcoming');
   const [selectedTherapist, setSelectedTherapist] = useState('');
   const [selectedDate, setSelectedDate] = useState('');
@@ -20,7 +30,7 @@ const MyAppointments = () => {
 
   const [feedbacks] = useState(() => {
     const savedFeedbacks = localStorage.getItem('patientFeedbacks');
-    return savedFeedbacks ? JSON.parse(savedFeedbacks) : mockFeedbacks;
+    return savedFeedbacks ? JSON.parse(savedFeedbacks) : [];
   });
 
   const filteredAppointments = appointments.filter((apt) => {
@@ -64,12 +74,18 @@ const MyAppointments = () => {
     setIsCancelModalOpen(true);
   };
 
-  const confirmCancel = () => {
-    setAppointments(appointments.map(apt =>
-      apt.id === selectedAppointment.id ? { ...apt, status: 'Cancelled' } : apt
-    ));
-    setIsCancelModalOpen(false);
-    setSelectedAppointment(null);
+  const confirmCancel = async () => {
+    try {
+      const updated = await appointmentApi.updateStatus(selectedAppointment.id, 'Cancelled');
+      setAppointments(appointments.map(apt =>
+        apt.id === updated.id ? updated : apt
+      ));
+    } catch (err) {
+      alert(err.message || 'Failed to cancel the appointment. Please try again.');
+    } finally {
+      setIsCancelModalOpen(false);
+      setSelectedAppointment(null);
+    }
   };
 
   const handleReschedule = (apt) => {

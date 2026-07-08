@@ -1,14 +1,43 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Card from '../components/ui/Card';
 import { Users, Calendar, Clock, XCircle, TrendingUp } from 'lucide-react';
-import { mockAppointments } from '../data/mockData';
+import { useAuth } from '../context/AuthContext';
+import { appointmentApi, therapistApi, scheduleApi } from '../services/api';
 
 const Dashboard = () => {
+  const { user } = useAuth();
+  const [appointments, setAppointments] = useState([]);
+  const [therapistCount, setTherapistCount] = useState(0);
+  const [slotStats, setSlotStats] = useState({ available: 0, total: 0 });
+
+  useEffect(() => {
+    if (!user) return;
+    appointmentApi
+      .getAll({ userId: user.id })
+      .then(setAppointments)
+      .catch(() => setAppointments([]));
+    therapistApi
+      .getAll()
+      .then((list) => setTherapistCount(list.length))
+      .catch(() => setTherapistCount(0));
+    scheduleApi
+      .getTherapistSlots()
+      .then((byName) => {
+        const all = Object.values(byName).flat();
+        setSlotStats({ available: all.filter((s) => s.available).length, total: all.length });
+      })
+      .catch(() => setSlotStats({ available: 0, total: 0 }));
+  }, [user]);
+
+  const today = new Date().toISOString().split('T')[0];
+  const todayCount = appointments.filter(a => a.date === today && a.status === 'Upcoming').length;
+  const cancelledCount = appointments.filter(a => a.status === 'Cancelled').length;
+
   const stats = [
-    { label: 'Total Therapists', value: '25', total: 30, icon: <Users size={24} />, color: 'var(--primary)', bg: 'var(--secondary)' },
-    { label: "Today's Appointments", value: '8', total: 10, icon: <Calendar size={24} />, color: 'var(--accent)', bg: 'rgba(20, 184, 166, 0.15)' },
-    { label: 'Available Slots', value: '32', total: 50, icon: <Clock size={24} />, color: 'var(--success)', bg: 'var(--success-bg)' },
-    { label: 'Cancelled', value: '2', total: 10, icon: <XCircle size={24} />, color: 'var(--error)', bg: 'var(--error-bg)' },
+    { label: 'Total Therapists', value: `${therapistCount}`, total: Math.max(therapistCount, 1), icon: <Users size={24} />, color: 'var(--primary)', bg: 'var(--secondary)' },
+    { label: "Today's Appointments", value: `${todayCount}`, total: Math.max(appointments.length, 1), icon: <Calendar size={24} />, color: 'var(--accent)', bg: 'rgba(20, 184, 166, 0.15)' },
+    { label: 'Available Slots', value: `${slotStats.available}`, total: Math.max(slotStats.total, 1), icon: <Clock size={24} />, color: 'var(--success)', bg: 'var(--success-bg)' },
+    { label: 'Cancelled', value: `${cancelledCount}`, total: Math.max(appointments.length, 1), icon: <XCircle size={24} />, color: 'var(--error)', bg: 'var(--error-bg)' },
   ];
 
   return (
@@ -16,7 +45,7 @@ const Dashboard = () => {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
         <div>
           <h1 style={{ fontSize: '1.75rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>Patient Dashboard</h1>
-          <p style={{ color: 'var(--text-secondary)' }}>Welcome back, John! Here is your overview for today.</p>
+          <p style={{ color: 'var(--text-secondary)' }}>Welcome back, {user?.name?.split(' ')[0] || 'there'}! Here is your overview for today.</p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--success)', backgroundColor: 'var(--success-bg)', padding: '0.5rem 1rem', borderRadius: 'var(--radius-full)', fontWeight: 500, fontSize: '0.875rem' }}>
           <TrendingUp size={16} />
@@ -73,7 +102,7 @@ const Dashboard = () => {
                 </tr>
               </thead>
               <tbody>
-                {mockAppointments.filter(a => a.status === 'Upcoming').map(apt => (
+                {appointments.filter(a => a.status === 'Upcoming').map(apt => (
                   <tr key={apt.id} style={{ borderBottom: '1px solid var(--border)', transition: 'background-color var(--transition-fast)' }} className="hover-bg-main">
                     <td style={{ padding: '1rem 1.5rem', fontWeight: 500 }}>{apt.therapistName}</td>
                     <td style={{ padding: '1rem 1.5rem' }}>{apt.date} at {apt.time}</td>
@@ -90,7 +119,7 @@ const Dashboard = () => {
                     </td>
                   </tr>
                 ))}
-                {mockAppointments.filter(a => a.status === 'Upcoming').length === 0 && (
+                {appointments.filter(a => a.status === 'Upcoming').length === 0 && (
                   <tr>
                     <td colSpan="4" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-light)' }}>
                       No upcoming appointments.
