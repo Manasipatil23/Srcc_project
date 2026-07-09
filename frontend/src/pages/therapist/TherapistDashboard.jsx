@@ -1,26 +1,43 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Calendar, Users, Clock, AlertCircle, TrendingUp, CheckCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
-import { mockAppointments } from '../../data/mockData';
+import Avatar from '../../components/ui/Avatar';
+import { appointmentApi } from '../../services/api';
 
 const TherapistDashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  
-  const today = '2026-06-06'; // Mock today's date
-  
-  const [appointments, setAppointments] = useState(mockAppointments);
-  
-  const todayAppointments = appointments.filter(a => a.therapistName === user?.name && a.date === today);
-  const upcomingAppointments = appointments.filter(a => a.therapistName === user?.name && a.status === 'Upcoming');
-  const cancelledAppointments = appointments.filter(a => a.therapistName === user?.name && a.status === 'Cancelled');
-  
-  const handleMarkDone = (id) => {
-    setAppointments(prev => prev.map(a => a.id === id ? { ...a, status: 'Completed' } : a));
+
+  const today = new Date().toISOString().split('T')[0];
+
+  const [appointments, setAppointments] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    appointmentApi
+      .getAll()
+      .then((data) =>
+        setAppointments(data.filter((a) => a.therapistName === user?.name))
+      )
+      .catch(() => setAppointments([]))
+      .finally(() => setIsLoading(false));
+  }, [user?.name]);
+
+  const todayAppointments = appointments.filter(a => a.date === today);
+  const upcomingAppointments = appointments.filter(a => a.status === 'Upcoming');
+  const cancelledAppointments = appointments.filter(a => a.status === 'Cancelled');
+
+  const handleMarkDone = async (id) => {
+    try {
+      const updated = await appointmentApi.updateStatus(id, 'Completed');
+      setAppointments(prev => prev.map(a => a.id === id ? updated : a));
+    } catch (err) {
+      alert(err.message || 'Failed to update appointment.');
+    }
   };
   
   const stats = [
@@ -40,7 +57,7 @@ const TherapistDashboard = () => {
           <p style={{ color: 'var(--text-secondary)' }}>Welcome back, {user?.name}! Here's your schedule overview for today.</p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-           <img src="https://i.pravatar.cc/150?u=therapist_mock" alt="Profile" style={{ width: '48px', height: '48px', borderRadius: '50%', border: '2px solid var(--primary)', objectFit: 'cover' }} />
+           <Avatar name={user?.name || ''} src={user?.image} size={48} style={{ border: '2px solid var(--primary)' }} />
            <Button variant="outline" onClick={() => navigate('/therapist/availability')}>Update Availability</Button>
         </div>
       </div>
@@ -68,7 +85,11 @@ const TherapistDashboard = () => {
              <Button variant="ghost" size="sm" onClick={() => navigate('/therapist/calendar')}>View Calendar</Button>
            </div>
            
-           {todayAppointments.length > 0 ? (
+           {isLoading ? (
+             <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-light)' }}>
+               <p>Loading appointments...</p>
+             </div>
+           ) : todayAppointments.length > 0 ? (
              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                {todayAppointments.map((apt, i) => (
                  <div key={i} style={{ display: 'flex', gap: '1rem', padding: '1rem', backgroundColor: 'var(--bg-main)', borderRadius: 'var(--radius-md)', borderLeft: `4px solid ${apt.status === 'Upcoming' ? 'var(--primary)' : 'var(--success)'}` }}>

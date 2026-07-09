@@ -23,6 +23,8 @@ const userSchema = new mongoose.Schema(
       enum: ['patient', 'therapist', 'admin'],
       default: 'patient',
     },
+    // Profile photo as a data URL; empty means "show initials avatar".
+    image: { type: String, default: '' },
   },
   { timestamps: true }
 );
@@ -35,6 +37,9 @@ userSchema.pre('save', async function (next) {
 });
 
 userSchema.methods.matchPassword = async function (enteredPassword) {
+  if (!this.password || typeof this.password !== 'string') {
+    return false;
+  }
   return bcrypt.compare(enteredPassword, this.password);
 };
 

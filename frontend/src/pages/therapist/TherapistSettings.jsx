@@ -1,13 +1,30 @@
 import React, { useState } from 'react';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
+import Avatar, { pickProfilePhoto } from '../../components/ui/Avatar';
+import { authApi } from '../../services/api';
 import { User, Bell, Lock, Moon, Sun } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 const TherapistSettings = () => {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const [activeTab, setActiveTab] = useState('profile');
   const [darkMode, setDarkMode] = useState(false);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+
+  const handleChangePhoto = async () => {
+    try {
+      const image = await pickProfilePhoto();
+      if (!image) return;
+      setIsUploadingPhoto(true);
+      const res = await authApi.updateProfile({ image });
+      updateUser({ image: res.user.image });
+    } catch (err) {
+      alert(err.message || 'Failed to update profile photo.');
+    } finally {
+      setIsUploadingPhoto(false);
+    }
+  };
 
   const toggleTheme = () => {
     const isDark = !darkMode;
@@ -52,10 +69,17 @@ const TherapistSettings = () => {
             <div className="animate-fade-in">
               <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1.5rem' }}>Profile Information</h2>
               <div style={{ display: 'flex', alignItems: 'center', gap: '2rem', marginBottom: '2rem' }}>
-                <img src="https://i.pravatar.cc/150?u=therapist_mock" alt="Profile" style={{ width: '80px', height: '80px', borderRadius: '50%', objectFit: 'cover', border: '3px solid var(--primary)' }} />
+                <Avatar
+                  name={user?.name || ''}
+                  src={user?.image}
+                  size={80}
+                  style={{ border: '3px solid var(--primary)', opacity: isUploadingPhoto ? 0.5 : 1 }}
+                />
                 <div>
-                  <Button variant="outline" size="sm" style={{ marginBottom: '0.5rem' }}>Change Photo</Button>
-                  <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>JPG, GIF or PNG. Max size of 800K</p>
+                  <Button variant="outline" size="sm" style={{ marginBottom: '0.5rem' }} onClick={handleChangePhoto} disabled={isUploadingPhoto}>
+                    {isUploadingPhoto ? 'Uploading...' : 'Change Photo'}
+                  </Button>
+                  <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>JPG, GIF or PNG. It will update everywhere your profile appears.</p>
                 </div>
               </div>
               <form style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>

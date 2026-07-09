@@ -25,19 +25,36 @@ export const authApi = {
   login: (payload) =>
     request('/auth/login', { method: 'POST', body: JSON.stringify(payload) }),
   profile: () => request('/auth/profile'),
+  updateProfile: (payload) =>
+    request('/auth/profile', { method: 'PUT', body: JSON.stringify(payload) }),
   saveToken: (token) => localStorage.setItem('srcc_token', token),
   clearToken: () => localStorage.removeItem('srcc_token'),
 };
 
 // ---------- Therapists ----------
 export const therapistApi = {
-  getAll: () => request('/therapists').then((r) => r.data),
+  getAll: (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    return request(`/therapists${query ? `?${query}` : ''}`).then((r) => r.data);
+  },
   getById: (id) => request(`/therapists/${id}`).then((r) => r.data),
+  getAvailability: (id) => request(`/therapists/${id}/availability`).then((r) => r.data),
   updateAvailability: (id, payload) =>
     request(`/therapists/${id}/availability`, {
       method: 'PUT',
       body: JSON.stringify(payload),
     }),
+  update: (id, payload) =>
+    request(`/therapists/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    }).then((r) => r.data),
+  updateStatus: (id, status) =>
+    request(`/therapists/${id}/status`, {
+      method: 'PUT',
+      body: JSON.stringify({ status }),
+    }).then((r) => r.data),
+  remove: (id) => request(`/therapists/${id}`, { method: 'DELETE' }),
 };
 
 // ---------- Appointments ----------
@@ -76,6 +93,8 @@ export const scheduleApi = {
   getTimeSlots: () => request('/schedules/timeslots').then((r) => r.data),
   getTherapistSlots: () => request('/schedules/slots').then((r) => r.data),
   getWeeklySchedules: () => request('/schedules/weekly').then((r) => r.data),
+  getAvailableSlots: (therapistId, date) =>
+    request(`/schedules/available?therapistId=${therapistId}&date=${date}`).then((r) => r.data),
 };
 
 // ---------- Patients ----------

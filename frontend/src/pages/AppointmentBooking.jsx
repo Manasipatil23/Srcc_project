@@ -4,6 +4,7 @@ import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import { useAuth } from '../context/AuthContext';
 import { therapistApi, scheduleApi, appointmentApi } from '../services/api';
+import Avatar from '../components/ui/Avatar';
 import { Calendar as CalendarIcon, Clock, User, CheckCircle, ChevronRight, ChevronLeft, Star } from 'lucide-react';
 
 const AppointmentBooking = () => {
@@ -13,17 +14,34 @@ const AppointmentBooking = () => {
   const [selectedTherapist, setSelectedTherapist] = useState(null);
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [therapists, setTherapists] = useState([]);
-  const [slotsByTherapist, setSlotsByTherapist] = useState({});
+  const [availableSlots, setAvailableSlots] = useState([]);
+  const [isLoadingSlots, setIsLoadingSlots] = useState(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [bookingError, setBookingError] = useState('');
 
   useEffect(() => {
     therapistApi.getAll().then(setTherapists).catch(() => setTherapists([]));
-    scheduleApi.getTherapistSlots().then(setSlotsByTherapist).catch(() => setSlotsByTherapist({}));
   }, []);
 
-  const therapistSlots = selectedTherapist
-    ? slotsByTherapist[selectedTherapist.name] || []
-    : [];
+  useEffect(() => {
+    if (!selectedTherapist || !selectedDate) {
+      setAvailableSlots([]);
+      return;
+    }
+    setIsLoadingSlots(true);
+    scheduleApi
+      .getAvailableSlots(selectedTherapist.id, selectedDate)
+      .then((slots) => {
+        setAvailableSlots(slots);
+      })
+      .catch((err) => {
+        console.error('Failed to fetch available slots', err);
+        setAvailableSlots([]);
+      })
+      .finally(() => {
+        setIsLoadingSlots(false);
+      });
+  }, [selectedTherapist, selectedDate, refreshTrigger]);
 
   const nextStep = () => setStep(prev => Math.min(prev + 1, 4));
   const prevStep = () => setStep(prev => Math.max(prev - 1, 1));
@@ -39,8 +57,8 @@ const AppointmentBooking = () => {
         time: selectedSlot,
         type: 'Consultation',
       });
-      // Refresh slot availability so the booked slot shows as taken
-      scheduleApi.getTherapistSlots().then(setSlotsByTherapist).catch(() => {});
+      // Refresh slot availability so the booked slot shows as taken immediately
+      setRefreshTrigger((prev) => prev + 1);
       nextStep(); // Move to success step
       setTimeout(() => {
         setStep(1);
@@ -99,7 +117,7 @@ const AppointmentBooking = () => {
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                      <img src={therapist.image} alt={therapist.name} style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover' }} />
+                      <Avatar name={therapist.name} src={therapist.image} size={48} />
                       <div>
                         <h3 style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{therapist.name}</h3>
                         <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>{therapist.specialty}</p>
@@ -141,48 +159,58 @@ const AppointmentBooking = () => {
                 {selectedDate && (
                   <div>
                     <label style={{ display: 'block', marginBottom: '0.75rem', fontWeight: 500 }}>Available Slots</label>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: '0.75rem' }}>
-                      {therapistSlots.map(slotObj => {
-                        const slot = slotObj.time;
-                        const isAvailable = slotObj.available;
-                        return (
-                         <button
-                           key={slot}
-                           onClick={() => isAvailable && setSelectedSlot(slot)}
-                           disabled={!isAvailable}
-                           style={{
-                            padding: '0.75rem 0.5rem',
-                            border: `1px solid ${
-                             selectedSlot === slot
-                             ? 'var(--primary)'
-                             : isAvailable
-                             ? '#22c55e'
-                             : '#ef4444'
-                          }`,
-                          borderRadius: 'var(--radius-md)',
-                          backgroundColor:
-                             selectedSlot === slot
-                              ? 'var(--primary)'
-                              : isAvailable
-                              ? '#ecfdf5'
-                             : '#fef2f2',
-                          color:
-                             selectedSlot === slot
-                             ? 'white'
-                              : isAvailable
-                              ? '#15803d'
-                             : '#b91c1c',
-                          cursor: isAvailable ? 'pointer' : 'not-allowed',
-                          transition: 'all var(--transition-fast)',
-                          fontWeight: selectedSlot === slot ? 600 : 500,
-                          opacity: isAvailable ? 1 : 0.85
-                         }}
-                       >
-                         {slot}
-                       </button>
-                      );
-                     })}
-                    </div>
+                    {isLoadingSlots ? (
+                      <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', fontStyle: 'italic' }}>
+                        Loading available slots...
+                      </p>
+                    ) : availableSlots.length > 0 ? (
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: '0.75rem' }}>
+                        {availableSlots.map(slotObj => {
+                          const slot = slotObj.time;
+                          const isAvailable = slotObj.available;
+                          return (
+                            <button
+                              key={slot}
+                              onClick={() => isAvailable && setSelectedSlot(slot)}
+                              disabled={!isAvailable}
+                              style={{
+                                padding: '0.75rem 0.5rem',
+                                border: `1px solid ${
+                                  selectedSlot === slot
+                                    ? 'var(--primary)'
+                                    : isAvailable
+                                    ? '#22c55e'
+                                    : '#ef4444'
+                                }`,
+                                borderRadius: 'var(--radius-md)',
+                                backgroundColor:
+                                  selectedSlot === slot
+                                    ? 'var(--primary)'
+                                    : isAvailable
+                                    ? '#ecfdf5'
+                                    : '#fef2f2',
+                                color:
+                                  selectedSlot === slot
+                                    ? 'white'
+                                    : isAvailable
+                                    ? '#15803d'
+                                    : '#b91c1c',
+                                cursor: isAvailable ? 'pointer' : 'not-allowed',
+                                transition: 'all var(--transition-fast)',
+                                fontWeight: selectedSlot === slot ? 600 : 500,
+                                opacity: isAvailable ? 1 : 0.85
+                              }}
+                            >
+                              {slot}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', fontStyle: 'italic' }}>
+                        No available slots for this date. (Therapist is off or fully booked)
+                      </p>
+                    )}
                   </div>
                 )}
               </div>
@@ -194,7 +222,7 @@ const AppointmentBooking = () => {
               <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1.5rem' }}>Confirm Details</h2>
               <div style={{ padding: '2rem', backgroundColor: 'var(--bg-main)', borderRadius: 'var(--radius-lg)', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', borderBottom: '1px solid var(--border)', paddingBottom: '1rem' }}>
-                  <img src={selectedTherapist?.image} alt={selectedTherapist?.name} style={{ width: '64px', height: '64px', borderRadius: '50%', objectFit: 'cover' }} />
+                  <Avatar name={selectedTherapist?.name || ''} src={selectedTherapist?.image} size={64} />
                   <div>
                     <h3 style={{ fontSize: '1.25rem', fontWeight: 600 }}>{selectedTherapist?.name}</h3>
                     <p style={{ color: 'var(--text-secondary)' }}>{selectedTherapist?.specialty}</p>

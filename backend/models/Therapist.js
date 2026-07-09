@@ -13,6 +13,13 @@ const therapistSchema = new mongoose.Schema(
       enum: ['Available', 'Busy', 'Unavailable'],
       default: 'Available',
     },
+    // Self-registered therapists start as 'Pending' and cannot log in
+    // until an admin approves them; seeded/admin-created ones are 'Approved'.
+    status: {
+      type: String,
+      enum: ['Pending', 'Approved', 'Rejected'],
+      default: 'Approved',
+    },
     phone: { type: String, required: true, trim: true },
     patientsCount: { type: Number, default: 0, min: 0 },
     rating: { type: Number, default: 5.0, min: 0, max: 5 },

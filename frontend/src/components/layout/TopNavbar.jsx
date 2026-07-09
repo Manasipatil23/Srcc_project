@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, User, Sun, Moon, FileText, ChevronDown, Download, Upload, LogOut } from 'lucide-react';
+import { Bell, Sun, Moon, FileText, ChevronDown, Download, Upload, LogOut } from 'lucide-react';
+import Avatar from '../ui/Avatar';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import { notificationApi } from '../../services/api';
@@ -101,9 +102,7 @@ const TopNavbar = () => {
               <p style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--text-primary)' }}>{displayName}</p>
               <p style={{ color: 'var(--text-light)', fontSize: '0.75rem' }}>{displayRole}</p>
             </div>
-            <div style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundColor: 'var(--secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)' }}>
-              <User size={20} />
-            </div>
+            <Avatar name={displayName} src={user?.image} size={40} />
           </div>
           
           <button onClick={handleLogout} style={{ color: 'var(--text-light)', padding: '0.5rem', background: 'none', border: 'none', cursor: 'pointer' }} className="hover-opacity" title="Sign Out">

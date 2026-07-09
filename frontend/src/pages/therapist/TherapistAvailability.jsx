@@ -1,10 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
-import { Clock, Plus, Trash2, Copy } from 'lucide-react';
+import { Clock, Plus, Trash2, Copy, CheckCircle, AlertCircle } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
+import { therapistApi } from '../../services/api';
 
 const TherapistAvailability = () => {
+  const { user } = useAuth();
+  const [therapistId, setTherapistId] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [message, setMessage] = useState(null); // { text, type: 'success' | 'error' }
+
   const [schedule, setSchedule] = useState({
     Monday: { active: true, slots: [{ start: '09:00 AM', end: '01:00 PM' }, { start: '02:00 PM', end: '05:00 PM' }] },
     Tuesday: { active: true, slots: [{ start: '09:00 AM', end: '01:00 PM' }, { start: '02:00 PM', end: '05:00 PM' }] },
@@ -14,6 +21,40 @@ const TherapistAvailability = () => {
     Saturday: { active: false, slots: [] },
     Sunday: { active: false, slots: [] },
   });
+
+  // Fetch therapist ID on mount
+  useEffect(() => {
+    if (!user) return;
+    therapistApi
+      .getAll()
+      .then((list) => {
+        const found = list.find((item) => item.email === user.email || item.userId === user.id);
+        if (found) {
+          setTherapistId(found.id);
+        }
+      })
+      .catch((err) => {
+        console.error('Failed to load therapist profile', err);
+      });
+  }, [user]);
+
+  // Fetch availability when therapistId is resolved
+  useEffect(() => {
+    if (!therapistId) return;
+    therapistApi
+      .getAvailability(therapistId)
+      .then((res) => {
+        if (res.data && res.data.schedule) {
+          const hasData = Object.values(res.data.schedule).some((d) => d.active);
+          if (hasData) {
+            setSchedule(res.data.schedule);
+          }
+        }
+      })
+      .catch((err) => {
+        console.error('Failed to fetch availability schedule', err);
+      });
+  }, [therapistId]);
 
   const toggleDay = (day) => {
     setSchedule(prev => {
@@ -43,8 +84,88 @@ const TherapistAvailability = () => {
     }));
   };
 
+  const updateSlotTime = (day, index, field, value) => {
+    setSchedule(prev => {
+      const newSlots = [...prev[day].slots];
+      newSlots[index] = { ...newSlots[index], [field]: value };
+      return {
+        ...prev,
+        [day]: { ...prev[day], slots: newSlots }
+      };
+    });
+  };
+
+  const copyToAllDays = (fromDay) => {
+    const slotsToCopy = [...schedule[fromDay].slots];
+    setSchedule(prev => {
+      const next = { ...prev };
+      Object.keys(next).forEach(day => {
+        if (next[day].active) {
+          next[day] = { ...next[day], slots: JSON.parse(JSON.stringify(slotsToCopy)) };
+        }
+      });
+      return next;
+    });
+    
+    setMessage({ text: `Copied slots from ${fromDay} to all other active days!`, type: 'success' });
+    setTimeout(() => setMessage(null), 3000);
+  };
+
+  const handleSave = async () => {
+    if (!therapistId) {
+      setMessage({ text: 'Therapist profile not found. Unable to save.', type: 'error' });
+      return;
+    }
+
+    setIsSaving(true);
+    setMessage(null);
+
+    try {
+      // Send the schedule directly to the backend
+      await therapistApi.updateAvailability(therapistId, {
+        availability: 'Available',
+        weeklySchedule: schedule,
+      });
+
+      setMessage({ text: 'Availability saved successfully!', type: 'success' });
+      setTimeout(() => setMessage(null), 4000);
+    } catch (err) {
+      setMessage({ text: err.message || 'Failed to save availability. Please try again.', type: 'error' });
+      setTimeout(() => setMessage(null), 5000);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '2rem', maxWidth: '900px' }}>
+      
+      {/* Toast message banner */}
+      <AnimatePresence>
+        {message && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            style={{
+              padding: '1rem',
+              borderRadius: 'var(--radius-md)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.75rem',
+              fontSize: '0.925rem',
+              fontWeight: 500,
+              backgroundColor: message.type === 'success' ? '#ecfdf5' : '#fef2f2',
+              color: message.type === 'success' ? '#065f46' : '#991b1b',
+              border: `1px solid ${message.type === 'success' ? '#a7f3d0' : '#fecaca'}`,
+            }}
+          >
+            {message.type === 'success' ? <CheckCircle size={18} /> : <AlertCircle size={18} />}
+            <span>{message.text}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
           <h1 style={{ fontSize: '1.75rem', fontWeight: 'bold', marginBottom: '0.25rem' }}>
@@ -52,12 +173,14 @@ const TherapistAvailability = () => {
           </h1>
           <p style={{ color: 'var(--text-secondary)' }}>Set your regular working hours and breaks.</p>
         </div>
-        <Button>Save Availability</Button>
+        <Button onClick={handleSave} disabled={isSaving}>
+          {isSaving ? 'Saving...' : 'Save Availability'}
+        </Button>
       </div>
 
       <Card className="glass-panel" style={{ padding: '0', overflow: 'hidden' }}>
         <div style={{ display: 'flex', flexDirection: 'column' }}>
-          {Object.entries(schedule).map(([day, data], index) => (
+          {Object.entries(schedule).map(([day, data]) => (
             <div key={day} style={{ 
               display: 'flex', 
               gap: '2rem', 
@@ -109,12 +232,22 @@ const TherapistAvailability = () => {
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                             <div className="input-field" style={{ width: '120px', display: 'flex', alignItems: 'center', gap: '0.5rem', backgroundColor: 'var(--bg-main)', border: '1px solid var(--border)' }}>
                               <Clock size={14} color="var(--primary)" /> 
-                              <input type="text" defaultValue={slot.start} style={{ border: 'none', background: 'transparent', outline: 'none', width: '100%', fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-primary)' }} />
+                              <input 
+                                type="text" 
+                                value={slot.start} 
+                                onChange={(e) => updateSlotTime(day, i, 'start', e.target.value)}
+                                style={{ border: 'none', background: 'transparent', outline: 'none', width: '100%', fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-primary)' }} 
+                              />
                             </div>
                             <span style={{ color: 'var(--text-light)', fontWeight: 600 }}>-</span>
                             <div className="input-field" style={{ width: '120px', display: 'flex', alignItems: 'center', gap: '0.5rem', backgroundColor: 'var(--bg-main)', border: '1px solid var(--border)' }}>
                               <Clock size={14} color="var(--primary)" /> 
-                              <input type="text" defaultValue={slot.end} style={{ border: 'none', background: 'transparent', outline: 'none', width: '100%', fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-primary)' }} />
+                              <input 
+                                type="text" 
+                                value={slot.end} 
+                                onChange={(e) => updateSlotTime(day, i, 'end', e.target.value)}
+                                style={{ border: 'none', background: 'transparent', outline: 'none', width: '100%', fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-primary)' }} 
+                              />
                             </div>
                           </div>
                           
@@ -142,7 +275,7 @@ const TherapistAvailability = () => {
               
               {data.active && (
                 <div style={{ marginLeft: 'auto' }}>
-                  <Button variant="outline" size="sm" style={{ padding: '0.5rem' }} title="Copy to all days">
+                  <Button variant="outline" size="sm" style={{ padding: '0.5rem' }} title="Copy to all days" onClick={() => copyToAllDays(day)}>
                     <Copy size={16} />
                   </Button>
                 </div>

@@ -1,22 +1,33 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Filter, MoreVertical, Edit, XCircle, FileText } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
-import { mockAppointments } from '../../data/mockData';
+import { appointmentApi } from '../../services/api';
 import Modal from '../../components/ui/Modal';
 
 const TherapistAppointments = () => {
   const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState('All');
-  
+
+  const [appointments, setAppointments] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
   const [selectedApt, setSelectedApt] = useState(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
   const [notes, setNotes] = useState('');
 
-  const appointments = mockAppointments.filter(a => a.therapistName === user?.name);
+  useEffect(() => {
+    appointmentApi
+      .getAll()
+      .then((data) =>
+        setAppointments(data.filter((a) => a.therapistName === user?.name))
+      )
+      .catch(() => setAppointments([]))
+      .finally(() => setIsLoading(false));
+  }, [user?.name]);
 
   const filtered = appointments.filter(apt => {
     const matchesSearch = apt.patientName.toLowerCase().includes(searchTerm.toLowerCase());
@@ -74,7 +85,13 @@ const TherapistAppointments = () => {
               </tr>
             </thead>
             <tbody>
-              {filtered.length > 0 ? filtered.map((apt) => (
+              {isLoading ? (
+                <tr>
+                  <td colSpan="5" style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-light)' }}>
+                    Loading appointments...
+                  </td>
+                </tr>
+              ) : filtered.length > 0 ? filtered.map((apt) => (
                 <tr key={apt.id} style={{ borderBottom: '1px solid var(--border)' }} className="hover-bg-main">
                   <td style={{ padding: '1rem 0.5rem', fontWeight: 500 }}>{apt.patientName}</td>
                   <td style={{ padding: '1rem 0.5rem' }}>

@@ -1,12 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
-import {
-  mockTherapists,
-  therapistSlots
-} from '../data/mockData';
+import { therapistApi, scheduleApi, appointmentApi } from '../services/api';
 
 const SchedulePatient = () => {
+  const [therapists, setTherapists] = useState([]);
+  const [slotsByTherapist, setSlotsByTherapist] = useState({});
+  const [isLoading, setIsLoading] = useState(true);
+  const [isBooking, setIsBooking] = useState(false);
+
   const [patientName, setPatientName] = useState('');
   const [age, setAge] = useState('');
   const [contact, setContact] = useState('');
@@ -15,12 +17,28 @@ const SchedulePatient = () => {
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
   const [scheduled, setScheduled] = useState(false);
+
+  useEffect(() => {
+    Promise.all([therapistApi.getAll(), scheduleApi.getTherapistSlots()])
+      .then(([therapistData, slotData]) => {
+        setTherapists(therapistData);
+        setSlotsByTherapist(slotData);
+      })
+      .catch(() => {
+        setTherapists([]);
+        setSlotsByTherapist({});
+      })
+      .finally(() => setIsLoading(false));
+  }, []);
+
+  const selectedTherapist = therapists.find((t) => t.id === therapist);
+
   const selectedSlots =
-    therapist && date
-      ? therapistSlots[therapist] || []
+    selectedTherapist && date
+      ? slotsByTherapist[selectedTherapist.name] || []
       : [];
 
-  const handleSchedule = () => {
+  const handleSchedule = async () => {
     if (
       !patientName ||
       !age ||
@@ -34,8 +52,32 @@ const SchedulePatient = () => {
       return;
     }
 
-    setScheduled(true);
+    setIsBooking(true);
+    try {
+      await appointmentApi.book({
+        therapistId: therapist,
+        patientName,
+        date,
+        time,
+        type: patientType
+      });
+      setScheduled(true);
+
+      // Refresh slot availability so the booked slot shows as FULL
+      scheduleApi
+        .getTherapistSlots()
+        .then(setSlotsByTherapist)
+        .catch(() => {});
+    } catch (err) {
+      alert(err.message || 'Failed to schedule appointment.');
+    } finally {
+      setIsBooking(false);
+    }
   };
+
+  if (isLoading) {
+    return <h2>Loading therapists...</h2>;
+  }
 
   return (
     <div
@@ -113,8 +155,8 @@ const SchedulePatient = () => {
           >
             <option value="">Select Therapist</option>
 
-            {mockTherapists.map((t) => (
-              <option key={t.id} value={t.name}>
+            {therapists.map((t) => (
+              <option key={t.id} value={t.id}>
                 {t.name}
               </option>
             ))}
@@ -216,8 +258,8 @@ const SchedulePatient = () => {
         </div>
 
         <div style={{ marginTop: '2rem' }}>
-          <Button onClick={handleSchedule}>
-            Schedule Patient
+          <Button onClick={handleSchedule} disabled={isBooking}>
+            {isBooking ? 'Scheduling...' : 'Schedule Patient'}
           </Button>
         </div>
       </Card>
@@ -247,7 +289,7 @@ const SchedulePatient = () => {
           </p>
 
           <p>
-            <strong>Therapist:</strong> {therapist}
+            <strong>Therapist:</strong> {selectedTherapist?.name}
           </p>
 
           <p>

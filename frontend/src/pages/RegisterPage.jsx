@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
-import { ArrowLeft, ShieldCheck, HeartPulse, CheckCircle } from 'lucide-react';
+import { ArrowLeft, ShieldCheck, HeartPulse, Stethoscope, CheckCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const RegisterPage = () => {
@@ -16,6 +16,9 @@ const RegisterPage = () => {
     phone: '',
     dob: '',
     hospitalName: '',
+    specialty: '',
+    qualification: '',
+    experience: '',
     password: '',
     confirmPassword: ''
   });
@@ -29,6 +32,7 @@ const RegisterPage = () => {
   const [isPhoneVerified, setIsPhoneVerified] = useState(false);
 
   const isAdmin = selectedRole === 'admin';
+  const isTherapist = selectedRole === 'therapist';
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -106,10 +110,18 @@ const RegisterPage = () => {
         name: formData.name,
         email: formData.email,
         password: formData.password,
-        role: selectedRole === 'admin' ? 'admin' : 'patient',
+        role: selectedRole,
         phone: formData.phone,
         dob: formData.dob,
+        ...(isTherapist && {
+          specialty: formData.specialty,
+          qualification: formData.qualification,
+          experience: formData.experience,
+        }),
       });
+      if (isTherapist) {
+        alert('Registration submitted!\n\nYour account is pending verification by the hospital admin. You will be able to sign in once it is approved.');
+      }
       navigate('/login');
     } catch (err) {
       setError(err.message || 'Registration failed. Please try again.');
@@ -157,7 +169,7 @@ const RegisterPage = () => {
             left: 0,
             right: 0,
             height: '6px',
-            backgroundColor: isAdmin ? 'var(--accent)' : 'var(--primary)'
+            backgroundColor: isAdmin ? 'var(--accent)' : isTherapist ? '#8b5cf6' : 'var(--primary)'
           }}></div>
 
           <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
@@ -165,12 +177,18 @@ const RegisterPage = () => {
               display: 'inline-flex',
               padding: '0.75rem',
               borderRadius: '50%',
-              backgroundColor: isAdmin ? 'rgba(20, 184, 166, 0.1)' : 'var(--secondary)',
+              backgroundColor: isAdmin
+                ? 'rgba(20, 184, 166, 0.1)'
+                : isTherapist
+                  ? 'rgba(139, 92, 246, 0.15)'
+                  : 'var(--secondary)',
               marginBottom: '1rem'
             }}>
               {isAdmin
                 ? <ShieldCheck size={32} color="var(--accent)" />
-                : <HeartPulse size={32} color="var(--primary)" />}
+                : isTherapist
+                  ? <Stethoscope size={32} color="#8b5cf6" />
+                  : <HeartPulse size={32} color="var(--primary)" />}
             </div>
 
             <h1 style={{
@@ -179,7 +197,7 @@ const RegisterPage = () => {
               fontWeight: 'bold',
               marginBottom: '0.25rem'
             }}>
-              {isAdmin ? 'Admin Registration' : 'Patient Registration'}
+              {isAdmin ? 'Admin Registration' : isTherapist ? 'Therapist Registration' : 'Patient Registration'}
             </h1>
 
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
@@ -219,7 +237,7 @@ const RegisterPage = () => {
 
             <div>
               <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500, fontSize: '0.875rem' }}>
-                {isAdmin ? 'Admin Full Name' : 'Full Name'}
+                {isAdmin ? 'Admin Full Name' : isTherapist ? 'Therapist Full Name' : 'Full Name'}
               </label>
               <input
                 type="text"
@@ -263,7 +281,7 @@ const RegisterPage = () => {
               </div>
             </div>
 
-            {!isAdmin && (
+            {!isAdmin && !isTherapist && (
               <div>
                 <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500, fontSize: '0.875rem' }}>
                   Date of Birth
@@ -276,6 +294,55 @@ const RegisterPage = () => {
                   onChange={handleChange}
                 />
               </div>
+            )}
+
+            {isTherapist && (
+              <>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500, fontSize: '0.875rem' }}>
+                      Specialty
+                    </label>
+                    <input
+                      type="text"
+                      name="specialty"
+                      required
+                      className="input-field"
+                      placeholder="E.g. Child Psychologist"
+                      onChange={handleChange}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500, fontSize: '0.875rem' }}>
+                      Years of Experience
+                    </label>
+                    <input
+                      type="number"
+                      name="experience"
+                      required
+                      min="0"
+                      className="input-field"
+                      placeholder="E.g. 5"
+                      onChange={handleChange}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500, fontSize: '0.875rem' }}>
+                    Qualification
+                  </label>
+                  <input
+                    type="text"
+                    name="qualification"
+                    required
+                    className="input-field"
+                    placeholder="E.g. PhD Child Psychology"
+                    onChange={handleChange}
+                  />
+                </div>
+              </>
             )}
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>

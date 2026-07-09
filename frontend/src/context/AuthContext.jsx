@@ -41,8 +41,18 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
 
+  // Merge fresh fields (e.g. a new profile photo) into the signed-in user
+  // so every component reading `user` updates immediately.
+  const updateUser = (partial) => {
+    setUser((prev) => {
+      const next = { ...prev, ...partial };
+      localStorage.setItem(STORED_USER_KEY, JSON.stringify(next));
+      return next;
+    });
+  };
+
   return (
-    <AuthContext.Provider value={{ user, selectedRole, setSelectedRole, login, register, logout }}>
+    <AuthContext.Provider value={{ user, selectedRole, setSelectedRole, login, register, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

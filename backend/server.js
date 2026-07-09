@@ -13,7 +13,8 @@ import { notFound, errorHandler } from './middleware/errorHandler.js';
 const app = express();
 
 app.use(cors({ origin: true, credentials: true }));
-app.use(express.json());
+// Raised limit so profile photos (base64 data URLs) fit in the request body.
+app.use(express.json({ limit: '5mb' }));
 
 app.get('/api/health', (req, res) => {
   res.json({ success: true, status: 'ok', timestamp: new Date().toISOString() });

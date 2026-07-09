@@ -9,14 +9,14 @@ import Schedule from '../models/Schedule.js';
 import Patient from '../models/Patient.js';
 
 const THERAPISTS = [
-  { name: 'Dr. Sarah Jenkins', specialty: 'Clinical Psychologist', qualification: 'PhD Psychology', experience: 8, availability: 'Available', email: 'sarah.jenkins@srcc.com', phone: '+91 9876543210', patientsCount: 12, rating: 4.8, image: 'https://i.pravatar.cc/150?u=a042581f4e29026704d' },
-  { name: 'Dr. Michael Chen', specialty: 'Psychiatrist', qualification: 'MD Psychiatry', experience: 12, availability: 'Busy', email: 'michael.chen@srcc.com', phone: '+91 9876543211', patientsCount: 28, rating: 4.9, image: 'https://i.pravatar.cc/150?u=a042581f4e29026704e' },
-  { name: 'Dr. Emily Carter', specialty: 'Couples Therapist', qualification: 'MSc Counseling Psychology', experience: 6, availability: 'Available', email: 'emily.carter@srcc.com', phone: '+91 9876543212', patientsCount: 8, rating: 4.7, image: 'https://i.pravatar.cc/150?u=a042581f4e29026704f' },
-  { name: 'Dr. James Wilson', specialty: 'Child Psychologist', qualification: 'PhD Child Psychology', experience: 10, availability: 'Unavailable', email: 'james.wilson@srcc.com', phone: '+91 9876543213', patientsCount: 15, rating: 4.6, image: 'https://i.pravatar.cc/150?u=a042581f4e29026704g' },
-  { name: 'Dr. Olivia Martinez', specialty: 'Cognitive Behavioral Therapist', qualification: 'PhD Clinical Psychology', experience: 9, availability: 'Available', email: 'olivia.martinez@srcc.com', phone: '+91 9876543214', patientsCount: 19, rating: 4.9, image: 'https://i.pravatar.cc/150?u=a042581f4e29026704h' },
-  { name: 'Dr. Robert Taylor', specialty: 'Addiction Counselor', qualification: 'MA Addiction Counseling', experience: 11, availability: 'Available', email: 'robert.taylor@srcc.com', phone: '+91 9876543215', patientsCount: 22, rating: 4.5, image: 'https://i.pravatar.cc/150?u=a042581f4e29026704i' },
-  { name: 'Dr. Sophia Anderson', specialty: 'Clinical Social Worker', qualification: 'MSW (Clinical)', experience: 13, availability: 'Busy', email: 'sophia.anderson@srcc.com', phone: '+91 9876543216', patientsCount: 30, rating: 4.8, image: 'https://i.pravatar.cc/150?u=a042581f4e29026704j' },
-  { name: 'Dr. William Thomas', specialty: 'Family Therapist', qualification: 'MFT (Marriage & Family Therapy)', experience: 7, availability: 'Available', email: 'william.thomas@srcc.com', phone: '+91 9876543217', patientsCount: 14, rating: 4.7, image: 'https://i.pravatar.cc/150?u=a042581f4e29026704k' },
+  { name: 'Dr. Sarah Jenkins', specialty: 'Clinical Psychologist', qualification: 'PhD Psychology', experience: 8, availability: 'Available', email: 'sarah.jenkins@srcc.com', phone: '+91 9876543210', patientsCount: 12, rating: 4.8 },
+  { name: 'Dr. Michael Chen', specialty: 'Psychiatrist', qualification: 'MD Psychiatry', experience: 12, availability: 'Busy', email: 'michael.chen@srcc.com', phone: '+91 9876543211', patientsCount: 28, rating: 4.9 },
+  { name: 'Dr. Emily Carter', specialty: 'Couples Therapist', qualification: 'MSc Counseling Psychology', experience: 6, availability: 'Available', email: 'emily.carter@srcc.com', phone: '+91 9876543212', patientsCount: 8, rating: 4.7 },
+  { name: 'Dr. James Wilson', specialty: 'Child Psychologist', qualification: 'PhD Child Psychology', experience: 10, availability: 'Unavailable', email: 'james.wilson@srcc.com', phone: '+91 9876543213', patientsCount: 15, rating: 4.6 },
+  { name: 'Dr. Olivia Martinez', specialty: 'Cognitive Behavioral Therapist', qualification: 'PhD Clinical Psychology', experience: 9, availability: 'Available', email: 'olivia.martinez@srcc.com', phone: '+91 9876543214', patientsCount: 19, rating: 4.9 },
+  { name: 'Dr. Robert Taylor', specialty: 'Addiction Counselor', qualification: 'MA Addiction Counseling', experience: 11, availability: 'Available', email: 'robert.taylor@srcc.com', phone: '+91 9876543215', patientsCount: 22, rating: 4.5 },
+  { name: 'Dr. Sophia Anderson', specialty: 'Clinical Social Worker', qualification: 'MSW (Clinical)', experience: 13, availability: 'Busy', email: 'sophia.anderson@srcc.com', phone: '+91 9876543216', patientsCount: 30, rating: 4.8 },
+  { name: 'Dr. William Thomas', specialty: 'Family Therapist', qualification: 'MFT (Marriage & Family Therapy)', experience: 7, availability: 'Available', email: 'william.thomas@srcc.com', phone: '+91 9876543217', patientsCount: 14, rating: 4.7 },
 ];
 
 const APPOINTMENTS = [

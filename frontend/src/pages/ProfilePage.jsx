@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import { useAuth } from '../context/AuthContext';
-import { patientApi } from '../services/api';
-import { User, Mail, Phone, Calendar, Activity, FileText, Download, Upload, Shield } from 'lucide-react';
+import { patientApi, authApi } from '../services/api';
+import Avatar, { pickProfilePhoto } from '../components/ui/Avatar';
+import { User, Mail, Phone, Calendar, Activity, FileText, Download, Upload, Shield, Camera } from 'lucide-react';
 
 const EMPTY_PROFILE = {
   id: '',
@@ -17,8 +18,9 @@ const EMPTY_PROFILE = {
 };
 
 const ProfilePage = () => {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const [profile, setProfile] = useState(EMPTY_PROFILE);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -27,6 +29,20 @@ const ProfilePage = () => {
       .then(setProfile)
       .catch(() => setProfile({ ...EMPTY_PROFILE, name: user.name }));
   }, [user]);
+
+  const handleChangePhoto = async () => {
+    try {
+      const image = await pickProfilePhoto();
+      if (!image) return;
+      setIsUploadingPhoto(true);
+      const res = await authApi.updateProfile({ image });
+      updateUser({ image: res.user.image });
+    } catch (err) {
+      alert(err.message || 'Failed to update profile photo.');
+    } finally {
+      setIsUploadingPhoto(false);
+    }
+  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', maxWidth: '1000px', margin: '0 auto' }}>
@@ -40,8 +56,35 @@ const ProfilePage = () => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
           <Card style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '1rem', position: 'relative', overflow: 'hidden' }}>
             <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '80px', backgroundColor: 'var(--primary)', opacity: 0.1, zIndex: 0 }}></div>
-            <div style={{ width: '96px', height: '96px', borderRadius: '50%', backgroundColor: 'var(--secondary)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1, border: '4px solid var(--bg-surface)' }}>
-              <User size={48} />
+            <div style={{ position: 'relative', zIndex: 1 }}>
+              <Avatar
+                name={profile.name || user?.name}
+                src={user?.image}
+                size={96}
+                style={{ border: '4px solid var(--bg-surface)', opacity: isUploadingPhoto ? 0.5 : 1 }}
+              />
+              <button
+                onClick={handleChangePhoto}
+                disabled={isUploadingPhoto}
+                title="Change profile photo"
+                style={{
+                  position: 'absolute',
+                  bottom: 0,
+                  right: 0,
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '50%',
+                  backgroundColor: 'var(--primary)',
+                  color: 'white',
+                  border: '2px solid var(--bg-surface)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer'
+                }}
+              >
+                <Camera size={16} />
+              </button>
             </div>
             <div style={{ zIndex: 1 }}>
               <h2 style={{ fontSize: '1.5rem', fontWeight: 600 }}>{profile.name || user?.name}</h2>

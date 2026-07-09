@@ -1,67 +1,67 @@
-import React from 'react';
-import { useParams } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
-import { mockTherapists } from '../data/mockData';
-import { useNavigate } from 'react-router-dom';
 import Modal from '../components/ui/Modal';
-import { useState } from 'react';
+import { therapistApi } from '../services/api';
+import Avatar from '../components/ui/Avatar';
 
 const TherapistProfile = () => {
   const navigate = useNavigate();
   const { id } = useParams();
 
-  const storedTherapists =
-    JSON.parse(localStorage.getItem('therapists')) ||
-    mockTherapists;
-
-  const originalTherapist =
-    storedTherapists.find((t) => t.id === id);
-
-  const [therapist, setTherapist] = useState(originalTherapist);
-
+  const [therapist, setTherapist] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   const [editedTherapist, setEditedTherapist] = useState({
-    name: therapist?.name || '',
-    specialty: therapist?.specialty || '',
-    email: therapist?.email || '',
-    phone: therapist?.phone || '',
-    qualification: therapist?.qualification || '',
-    experience: therapist?.experience || ''
+    name: '',
+    specialty: '',
+    email: '',
+    phone: '',
+    qualification: '',
+    experience: ''
   });
+
+  useEffect(() => {
+    therapistApi
+      .getById(id)
+      .then((data) => {
+        setTherapist(data);
+        setEditedTherapist({
+          name: data.name || '',
+          specialty: data.specialty || '',
+          email: data.email || '',
+          phone: data.phone || '',
+          qualification: data.qualification || '',
+          experience: data.experience ?? ''
+        });
+      })
+      .catch(() => setTherapist(null))
+      .finally(() => setIsLoading(false));
+  }, [id]);
+
+  if (isLoading) {
+    return <h2>Loading therapist...</h2>;
+  }
 
   if (!therapist) {
     return <h2>Therapist not found</h2>;
   }
 
-  const handleSave = () => {
-    const updatedTherapist = {
-      ...therapist,
-      ...editedTherapist
-    };
-
-    setTherapist(updatedTherapist);
-
-    const storedTherapists =
-      JSON.parse(localStorage.getItem('therapists')) ||
-      mockTherapists;
-
-    const updatedTherapists =
-      storedTherapists.map((t) =>
-        t.id === therapist.id
-          ? updatedTherapist
-          : t
-      );
-
-    localStorage.setItem(
-      'therapists',
-      JSON.stringify(updatedTherapists)
-    );
-
-    setIsEditModalOpen(false);
-
-    alert('Therapist updated successfully');
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      const updated = await therapistApi.update(therapist.id, editedTherapist);
+      setTherapist(updated);
+      setIsEditModalOpen(false);
+      alert('Therapist updated successfully');
+    } catch (err) {
+      alert(err.message || 'Failed to update therapist.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -78,19 +78,13 @@ const TherapistProfile = () => {
             alignItems: 'center'
           }}
         >
-          <img
-            src={therapist.image}
-            alt={therapist.name}
-            style={{
-              width: '120px',
-              height: '120px',
-              borderRadius: '50%'
-            }}
-          />
+          <Avatar name={therapist.name} src={therapist.image} size={120} />
 
           <div>
             <h2>{therapist.name}</h2>
             <p>{therapist.specialty}</p>
+            <p>{therapist.qualification} · {therapist.experience} yrs experience</p>
+            <p>{therapist.email} · {therapist.phone}</p>
             <p>Rating: {therapist.rating}</p>
             <p>Patients: {therapist.patientsCount}</p>
             <p>Status: {therapist.availability}</p>
@@ -212,8 +206,8 @@ const TherapistProfile = () => {
             placeholder="Phone"
           />
 
-          <Button onClick={handleSave}>
-            Save Changes
+          <Button onClick={handleSave} disabled={isSaving}>
+            {isSaving ? 'Saving...' : 'Save Changes'}
           </Button>
         </div>
       </Modal>

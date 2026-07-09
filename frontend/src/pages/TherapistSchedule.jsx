@@ -1,16 +1,35 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import Card from '../components/ui/Card';
-import { mockTherapists, therapistSchedules } from '../data/mockData';
+import { therapistApi, scheduleApi } from '../services/api';
 
 const TherapistSchedule = () => {
   const { id } = useParams();
 
-  const therapist = mockTherapists.find(
-    (t) => t.id === id
-  );
+  const [therapist, setTherapist] = useState(null);
+  const [schedule, setSchedule] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const schedule = therapistSchedules[id] || [];
+  useEffect(() => {
+    Promise.all([therapistApi.getById(id), scheduleApi.getWeeklySchedules()])
+      .then(([therapistData, weeklySchedules]) => {
+        setTherapist(therapistData);
+        setSchedule(weeklySchedules[id] || []);
+      })
+      .catch(() => {
+        setTherapist(null);
+        setSchedule([]);
+      })
+      .finally(() => setIsLoading(false));
+  }, [id]);
+
+  if (isLoading) {
+    return <h2>Loading schedule...</h2>;
+  }
+
+  if (!therapist) {
+    return <h2>Therapist not found</h2>;
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>

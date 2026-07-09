@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
-import { mockTherapists } from '../data/mockData';
-import { Search, Star } from 'lucide-react';
+import { therapistApi, authApi } from '../services/api';
+import { Search, Star, Clock, CheckCircle, XCircle } from 'lucide-react';
+import Avatar from '../components/ui/Avatar';
 import { useNavigate } from 'react-router-dom';
 import Modal from '../components/ui/Modal';
 
@@ -14,10 +15,9 @@ const TherapistsManagement = () => {
   const [availabilityFilter, setAvailabilityFilter] = useState('');
   const [isRemoveModalOpen, setIsRemoveModalOpen] = useState(false);
   const [selectedTherapist, setSelectedTherapist] = useState(null);
-  const [therapists, setTherapists] = useState(
-    JSON.parse(localStorage.getItem('therapists')) ||
-    mockTherapists
-  );
+  const [therapists, setTherapists] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [actionBusyId, setActionBusyId] = useState(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   const [newName, setNewName] = useState('');
@@ -26,22 +26,61 @@ const TherapistsManagement = () => {
   const [newExperience, setNewExperience] = useState('');
   const [newEmail, setNewEmail] = useState('');
   const [newPhone, setNewPhone] = useState('');
+  const [newPassword, setNewPassword] = useState('');
 
-  useEffect(() => {
-    if (!localStorage.getItem('therapists')) {
-      localStorage.setItem(
-        'therapists',
-        JSON.stringify(mockTherapists)
-      );
+  const loadTherapists = useCallback(async () => {
+    try {
+      const data = await therapistApi.getAll({ status: 'all' });
+      setTherapists(data);
+    } catch {
+      setTherapists([]);
+    } finally {
+      setIsLoading(false);
     }
   }, []);
+
+  useEffect(() => {
+    loadTherapists();
+  }, [loadTherapists]);
+
+  const pendingTherapists = therapists.filter(
+    (t) => t.status === 'Pending' || t.status === 'Rejected'
+  );
+  const approvedTherapists = therapists.filter(
+    (t) => !t.status || t.status === 'Approved'
+  );
+
+  const handleStatusChange = async (therapist, status) => {
+    setActionBusyId(therapist.id);
+    try {
+      await therapistApi.updateStatus(therapist.id, status);
+      await loadTherapists();
+    } catch (err) {
+      alert(err.message || 'Failed to update therapist status.');
+    } finally {
+      setActionBusyId(null);
+    }
+  };
 
   const handleRemoveClick = (therapist) => {
     setSelectedTherapist(therapist);
     setIsRemoveModalOpen(true);
   };
 
-  const filteredTherapists = therapists.filter((t) => {
+  const handleRemoveConfirm = async () => {
+    setActionBusyId(selectedTherapist.id);
+    try {
+      await therapistApi.remove(selectedTherapist.id);
+      await loadTherapists();
+    } catch (err) {
+      alert(err.message || 'Failed to remove therapist.');
+    } finally {
+      setActionBusyId(null);
+      setIsRemoveModalOpen(false);
+    }
+  };
+
+  const filteredTherapists = approvedTherapists.filter((t) => {
     const matchesSearch =
       t.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       t.specialty.toLowerCase().includes(searchTerm.toLowerCase());
@@ -69,7 +108,7 @@ const TherapistsManagement = () => {
     }
   };
 
-  const handleAddTherapist = () => {
+  const handleAddTherapist = async () => {
 
     if (
       !newName ||
@@ -77,37 +116,29 @@ const TherapistsManagement = () => {
       !newQualification ||
       !newExperience ||
       !newEmail ||
-      !newPhone
+      !newPhone ||
+      !newPassword
     ) {
       alert('Please fill all fields');
       return;
     }
 
-    const newTherapist = {
-      id: Date.now().toString(),
-      name: newName,
-      specialty: newSpecialty,
-      qualification: newQualification,
-      experience: Number(newExperience),
-      email: newEmail,
-      phone: newPhone,
-      availability: 'Available',
-      patientsCount: 0,
-      rating: 0,
-      image: 'https://i.pravatar.cc/150'
-    };
-
-    const updatedTherapists = [
-      ...therapists,
-      newTherapist
-    ];
-
-    setTherapists(updatedTherapists);
-
-    localStorage.setItem(
-      'therapists',
-      JSON.stringify(updatedTherapists)
-    );
+    try {
+      await authApi.register({
+        name: newName,
+        email: newEmail,
+        password: newPassword,
+        role: 'therapist',
+        phone: newPhone,
+        specialty: newSpecialty,
+        qualification: newQualification,
+        experience: newExperience,
+      });
+      await loadTherapists();
+    } catch (err) {
+      alert(err.message || 'Failed to add therapist.');
+      return;
+    }
 
     setIsAddModalOpen(false);
 
@@ -117,6 +148,7 @@ const TherapistsManagement = () => {
     setNewExperience('');
     setNewEmail('');
     setNewPhone('');
+    setNewPassword('');
   };
 
   return (
@@ -131,6 +163,86 @@ const TherapistsManagement = () => {
             + Add Therapist
           </Button>
         </div>
+
+        {pendingTherapists.length > 0 && (
+          <Card style={{ display: 'flex', flexDirection: 'column', gap: '1rem', borderLeft: '4px solid var(--warning)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Clock size={20} color="var(--warning)" />
+              <h2 style={{ fontSize: '1.125rem', fontWeight: 600 }}>
+                Registration Requests ({pendingTherapists.length})
+              </h2>
+            </div>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
+              New therapist accounts cannot sign in until you verify and approve them.
+            </p>
+
+            {pendingTherapists.map((therapist) => (
+              <div
+                key={therapist.id}
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                  gap: '1rem',
+                  padding: '1rem',
+                  border: '1px solid var(--border)',
+                  borderRadius: 'var(--radius-md)',
+                  backgroundColor: 'var(--bg-main)'
+                }}
+              >
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <h3 style={{ fontSize: '1rem', fontWeight: 600 }}>{therapist.name}</h3>
+                    <span style={{
+                      fontSize: '0.75rem',
+                      fontWeight: 600,
+                      padding: '0.125rem 0.625rem',
+                      borderRadius: '999px',
+                      color: therapist.status === 'Pending' ? 'var(--warning)' : 'var(--error)',
+                      backgroundColor: therapist.status === 'Pending' ? 'rgba(245, 158, 11, 0.12)' : 'var(--error-bg)'
+                    }}>
+                      {therapist.status}
+                    </span>
+                  </div>
+                  <p style={{ color: 'var(--primary)', fontSize: '0.875rem', fontWeight: 500 }}>
+                    {therapist.specialty} · {therapist.qualification} · {therapist.experience} yrs experience
+                  </p>
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.8125rem' }}>
+                    {therapist.email} · {therapist.phone}
+                  </p>
+                </div>
+
+                <div style={{ display: 'flex', gap: '0.75rem' }}>
+                  <Button
+                    style={{ backgroundColor: 'var(--success)', color: 'white', display: 'flex', alignItems: 'center', gap: '0.375rem' }}
+                    disabled={actionBusyId === therapist.id}
+                    onClick={() => handleStatusChange(therapist, 'Approved')}
+                  >
+                    <CheckCircle size={16} /> Approve
+                  </Button>
+                  {therapist.status === 'Pending' ? (
+                    <Button
+                      style={{ backgroundColor: '#ef4444', color: 'white', display: 'flex', alignItems: 'center', gap: '0.375rem' }}
+                      disabled={actionBusyId === therapist.id}
+                      onClick={() => handleStatusChange(therapist, 'Rejected')}
+                    >
+                      <XCircle size={16} /> Reject
+                    </Button>
+                  ) : (
+                    <Button
+                      style={{ backgroundColor: '#ef4444', color: 'white' }}
+                      disabled={actionBusyId === therapist.id}
+                      onClick={() => handleRemoveClick(therapist)}
+                    >
+                      Remove
+                    </Button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </Card>
+        )}
 
         <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
           <div style={{ position: 'relative', flex: '1', minWidth: '250px' }}>
@@ -182,7 +294,7 @@ const TherapistsManagement = () => {
           <Card key={therapist.id} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
               <div style={{ position: 'relative' }}>
-                <img src={therapist.image} alt={therapist.name} style={{ width: '64px', height: '64px', borderRadius: '50%', objectFit: 'cover' }} />
+                <Avatar name={therapist.name} src={therapist.image} size={64} />
                 <span className={therapist.availability === 'Available' ? 'pulse-success' : ''} style={{
                   position: 'absolute', bottom: 0, right: 0,
                   width: '14px', height: '14px', borderRadius: '50%',
@@ -250,7 +362,7 @@ const TherapistsManagement = () => {
         ))}
       </div>
 
-      {filteredTherapists.length === 0 && (
+      {!isLoading && filteredTherapists.length === 0 && (
         <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-light)' }}>
           <p>No therapists found matching your search.</p>
         </div>
@@ -269,7 +381,8 @@ const TherapistsManagement = () => {
         >
           <p>
             Are you sure you want to remove{" "}
-            <strong>{selectedTherapist?.name}</strong>?
+            <strong>{selectedTherapist?.name}</strong>? This also deletes their
+            login account.
           </p>
 
           <div
@@ -288,21 +401,8 @@ const TherapistsManagement = () => {
 
             <Button
               variant="danger"
-              onClick={() => {
-                const updatedTherapists =
-                  therapists.filter(
-                    (t) => t.id !== selectedTherapist.id
-                  );
-
-                setTherapists(updatedTherapists);
-
-                localStorage.setItem(
-                  'therapists',
-                  JSON.stringify(updatedTherapists)
-                );
-
-                setIsRemoveModalOpen(false);
-              }}
+              disabled={actionBusyId === selectedTherapist?.id}
+              onClick={handleRemoveConfirm}
             >
               Yes, Remove
             </Button>
@@ -362,6 +462,14 @@ const TherapistsManagement = () => {
             placeholder="Phone"
             value={newPhone}
             onChange={(e) => setNewPhone(e.target.value)}
+          />
+
+          <input
+            className="input-field"
+            type="password"
+            placeholder="Login Password (min 6 characters)"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
           />
 
           <Button onClick={handleAddTherapist}>

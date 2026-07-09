@@ -16,15 +16,21 @@ const Reschedule = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [availableSlots, setAvailableSlots] = useState([]);
+  const [isLoadingSlots, setIsLoadingSlots] = useState(false);
   const [rescheduleError, setRescheduleError] = useState('');
 
   useEffect(() => {
-    if (!appointment) return;
+    if (!appointment || !selectedDate) {
+      setAvailableSlots([]);
+      return;
+    }
+    setIsLoadingSlots(true);
     scheduleApi
-      .getTherapistSlots()
-      .then((byName) => setAvailableSlots(byName[appointment.therapistName] || []))
-      .catch(() => setAvailableSlots([]));
-  }, [appointment]);
+      .getAvailableSlots(appointment.therapistId, selectedDate)
+      .then(setAvailableSlots)
+      .catch(() => setAvailableSlots([]))
+      .finally(() => setIsLoadingSlots(false));
+  }, [appointment, selectedDate]);
 
   if (!appointment) {
     return (
@@ -91,27 +97,37 @@ const Reschedule = () => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <h2 style={{ fontSize: '1.25rem', fontWeight: 600 }}>2. Select New Time</h2>
           {selectedDate ? (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: '0.75rem' }}>
-              {availableSlots.map(slotObj => {
-                const slot = slotObj.time;
-                const disabled = !slotObj.available;
-                return (
-                  <button
-                    key={slot}
-                    onClick={() => !disabled && setSelectedSlot(slot)}
-                    disabled={disabled}
-                    style={{
-                      padding: '0.5rem', border: `1px solid ${selectedSlot === slot ? 'var(--primary)' : 'var(--border)'}`,
-                      borderRadius: 'var(--radius-md)', backgroundColor: selectedSlot === slot ? 'var(--primary)' : 'transparent',
-                      color: selectedSlot === slot ? 'white' : 'var(--text-primary)', cursor: disabled ? 'not-allowed' : 'pointer',
-                      opacity: disabled ? 0.4 : 1, transition: 'all var(--transition-fast)'
-                    }}
-                  >
-                    {slot}
-                  </button>
-                );
-              })}
-            </div>
+            isLoadingSlots ? (
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', fontStyle: 'italic' }}>
+                Loading available slots...
+              </p>
+            ) : availableSlots.length > 0 ? (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: '0.75rem' }}>
+                {availableSlots.map(slotObj => {
+                  const slot = slotObj.time;
+                  const disabled = !slotObj.available;
+                  return (
+                    <button
+                      key={slot}
+                      onClick={() => !disabled && setSelectedSlot(slot)}
+                      disabled={disabled}
+                      style={{
+                        padding: '0.5rem', border: `1px solid ${selectedSlot === slot ? 'var(--primary)' : 'var(--border)'}`,
+                        borderRadius: 'var(--radius-md)', backgroundColor: selectedSlot === slot ? 'var(--primary)' : 'transparent',
+                        color: selectedSlot === slot ? 'white' : 'var(--text-primary)', cursor: disabled ? 'not-allowed' : 'pointer',
+                        opacity: disabled ? 0.4 : 1, transition: 'all var(--transition-fast)'
+                      }}
+                    >
+                      {slot}
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', fontStyle: 'italic' }}>
+                No available slots for this date. (Therapist is off or fully booked)
+              </p>
+            )
           ) : (
             <p style={{ color: 'var(--text-light)' }}>Please select a new date first.</p>
           )}

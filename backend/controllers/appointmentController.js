@@ -64,12 +64,6 @@ export const bookAppointment = async (req, res, next) => {
       type,
     });
 
-    // Mark the therapist slot as unavailable
-    await Schedule.findOneAndUpdate(
-      { therapistId: therapist._id, day: null, 'slots.time': time },
-      { $set: { 'slots.$.available': false, 'slots.$.patientName': patientName } }
-    );
-
     await Notification.create({
       targetUserId: appointment.patientId,
       title: 'Appointment Booked',
@@ -114,16 +108,6 @@ export const rescheduleAppointment = async (req, res, next) => {
       });
     }
 
-    // Release the old slot, claim the new one
-    await Schedule.findOneAndUpdate(
-      { therapistId: appointment.therapistId, day: null, 'slots.time': appointment.time },
-      { $set: { 'slots.$.available': true, 'slots.$.patientName': '' } }
-    );
-    await Schedule.findOneAndUpdate(
-      { therapistId: appointment.therapistId, day: null, 'slots.time': time },
-      { $set: { 'slots.$.available': false, 'slots.$.patientName': appointment.patientName } }
-    );
-
     appointment.date = date;
     appointment.time = time;
     await appointment.save();
@@ -163,11 +147,6 @@ export const updateAppointmentStatus = async (req, res, next) => {
 
     // Release the slot if the appointment was cancelled
     if (status === 'Cancelled') {
-      await Schedule.findOneAndUpdate(
-        { therapistId: appointment.therapistId, day: null, 'slots.time': appointment.time },
-        { $set: { 'slots.$.available': true, 'slots.$.patientName': '' } }
-      );
-
       await Notification.create({
         targetUserId: appointment.patientId,
         title: 'Appointment Cancelled',
