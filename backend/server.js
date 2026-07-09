@@ -8,6 +8,7 @@ import appointmentRoutes from './routes/appointmentRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
 import scheduleRoutes from './routes/scheduleRoutes.js';
 import patientRoutes from './routes/patientRoutes.js';
+import leaveRoutes from './routes/leaveRoutes.js';
 import { notFound, errorHandler } from './middleware/errorHandler.js';
 
 const app = express();
@@ -26,6 +27,7 @@ app.use('/api/appointments', appointmentRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/schedules', scheduleRoutes);
 app.use('/api/patients', patientRoutes);
+app.use('/api/leaves', leaveRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

@@ -102,3 +102,17 @@ export const patientApi = {
   getDefault: () => request('/patients/default').then((r) => r.data),
   getById: (id) => request(`/patients/${id}`).then((r) => r.data),
 };
+
+// ---------- Leaves ----------
+export const leaveApi = {
+  apply: (payload) =>
+    request('/leaves', { method: 'POST', body: JSON.stringify(payload) }).then((r) => r.data),
+  getTherapistLeaves: (therapistId) =>
+    request(`/leaves/therapist/${therapistId}`).then((r) => r.data),
+  getAll: () => request('/leaves').then((r) => r.data),
+  updateStatus: (id, status) =>
+    request(`/leaves/${id}/status`, {
+      method: 'PUT',
+      body: JSON.stringify({ status }),
+    }).then((r) => r.data),
+};
