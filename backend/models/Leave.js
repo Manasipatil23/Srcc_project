@@ -4,8 +4,8 @@ const leaveSchema = new mongoose.Schema(
   {
     therapistId: { type: mongoose.Schema.Types.ObjectId, ref: 'Therapist', required: true },
     therapistName: { type: String, required: true, trim: true },
-    startDate: { type: String, required: true },
-    endDate: { type: String, required: true },
+    startDate: { type: String, required: true }, // 'YYYY-MM-DD'
+    endDate: { type: String, required: true }, // 'YYYY-MM-DD'
     reason: { type: String, default: '', trim: true },
     status: {
       type: String,

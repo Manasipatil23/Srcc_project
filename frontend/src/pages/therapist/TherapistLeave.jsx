@@ -1,51 +1,112 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar as CalendarIcon, FileText, CheckCircle, Clock, XCircle } from 'lucide-react';
+import { Calendar as CalendarIcon, FileText, CheckCircle, Clock, AlertCircle, XCircle } from 'lucide-react';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
-import { leaveApi } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
+import { therapistApi, leaveApi } from '../../services/api';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const TherapistLeave = () => {
   const { user } = useAuth();
+  const [therapistId, setTherapistId] = useState(null);
   const [leaveRequests, setLeaveRequests] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    if (user?.id) {
-      leaveApi.getForTherapist(user.id)
-        .then(data => setLeaveRequests(data))
-        .catch(err => console.error("Error fetching leaves", err))
-        .finally(() => setIsLoading(false));
-    }
-  }, [user]);
   
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [reason, setReason] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [message, setMessage] = useState(null); // { text, type: 'success' | 'error' }
+
+  // Resolve therapistId from logged in user
+  useEffect(() => {
+    if (!user) return;
+    therapistApi
+      .getAll()
+      .then((list) => {
+        const found = list.find((item) => item.email === user.email || item.userId === user.id);
+        if (found) {
+          setTherapistId(found.id);
+        }
+      })
+      .catch((err) => {
+        console.error('Failed to load therapist profile', err);
+      });
+  }, [user]);
+
+  // Load leave requests once therapistId is resolved
+  useEffect(() => {
+    if (!therapistId) return;
+    setIsLoading(true);
+    leaveApi
+      .getForTherapist(therapistId)
+      .then((res) => {
+        setLeaveRequests(res);
+      })
+      .catch((err) => {
+        console.error('Failed to load leave history', err);
+      })
+      .finally(() => setIsLoading(false));
+  }, [therapistId]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!startDate || !endDate || !user?.id) return;
+    if (!startDate || !endDate || !therapistId) return;
+
+    setIsSubmitting(true);
+    setMessage(null);
     
     try {
-      const newReq = await leaveApi.create({
-        therapistId: user.id,
+      const res = await leaveApi.create({
+        therapistId,
         startDate,
         endDate,
-        reason
+        reason,
       });
       
-      setLeaveRequests([newReq, ...leaveRequests]);
+      setLeaveRequests((prev) => [res, ...prev]);
       setStartDate('');
       setEndDate('');
       setReason('');
-    } catch (error) {
-      alert(error.message || 'Failed to submit leave request');
+      setMessage({ text: 'Leave request submitted successfully!', type: 'success' });
+      setTimeout(() => setMessage(null), 4000);
+    } catch (err) {
+      setMessage({ text: err.message || 'Failed to submit leave request.', type: 'error' });
+      setTimeout(() => setMessage(null), 5000);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
     <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+      
+      {/* Toast message banner */}
+      <AnimatePresence>
+        {message && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            style={{
+              padding: '1rem',
+              borderRadius: 'var(--radius-md)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.75rem',
+              fontSize: '0.925rem',
+              fontWeight: 500,
+              backgroundColor: message.type === 'success' ? '#ecfdf5' : '#fef2f2',
+              color: message.type === 'success' ? '#065f46' : '#991b1b',
+              border: `1px solid ${message.type === 'success' ? '#a7f3d0' : '#fecaca'}`,
+            }}
+          >
+            {message.type === 'success' ? <CheckCircle size={18} /> : <AlertCircle size={18} />}
+            <span>{message.text}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div>
         <h1 style={{ fontSize: '1.75rem', fontWeight: 'bold', marginBottom: '0.25rem' }}>
           Leave Requests
@@ -69,7 +130,9 @@ const TherapistLeave = () => {
               <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500, fontSize: '0.875rem' }}>Reason (Optional)</label>
               <textarea className="input-field" style={{ minHeight: '80px', resize: 'vertical' }} value={reason} onChange={e => setReason(e.target.value)} placeholder="E.g., Personal, Sick leave, Conference..."></textarea>
             </div>
-            <Button type="submit" className="w-full mt-2">Submit Request</Button>
+            <Button type="submit" disabled={isSubmitting || !therapistId} className="w-full mt-2">
+              {isSubmitting ? 'Submitting...' : 'Submit Request'}
+            </Button>
           </form>
         </Card>
 
@@ -90,7 +153,7 @@ const TherapistLeave = () => {
                   </div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', fontWeight: 600, color: req.status === 'Approved' ? 'var(--success)' : req.status === 'Pending' ? 'var(--warning)' : 'var(--error)' }}>
-                  {req.status === 'Approved' ? <CheckCircle size={16} /> : req.status === 'Pending' ? <Clock size={16} /> : <XCircle size={16} />}
+                  {req.status === 'Approved' ? <CheckCircle size={16} /> : req.status === 'Pending' ? <Clock size={16} /> : <AlertCircle size={16} />}
                   {req.status}
                 </div>
               </div>

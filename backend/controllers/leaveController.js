@@ -1,7 +1,9 @@
 import Leave from '../models/Leave.js';
 import Therapist from '../models/Therapist.js';
+import User from '../models/User.js';
+import Notification from '../models/Notification.js';
 
-// GET /api/leaves — Admin gets all leaves
+// GET /api/leaves - Admin gets all leaves
 export const getAllLeaves = async (req, res, next) => {
   try {
     const leaves = await Leave.find().sort({ createdAt: -1 });
@@ -14,12 +16,14 @@ export const getAllLeaves = async (req, res, next) => {
 // GET /api/leaves/therapist/:userId — Therapist gets their own leaves
 export const getTherapistLeaves = async (req, res, next) => {
   try {
+    let leaves;
     const therapist = await Therapist.findOne({ userId: req.params.id });
-    if (!therapist) {
-      return res.json({ success: true, count: 0, data: [] });
+    if (therapist) {
+      leaves = await Leave.find({ therapistId: therapist._id }).sort({ createdAt: -1 });
+    } else {
+      leaves = await Leave.find({ therapistId: req.params.id }).sort({ createdAt: -1 });
     }
-    const leaves = await Leave.find({ therapistId: therapist._id }).sort({ createdAt: -1 });
-    res.json({ success: true, count: leaves.length, data: leaves });
+    res.json({ success: true, count: leaves?.length || 0, data: leaves || [] });
   } catch (error) {
     next(error);
   }
@@ -34,7 +38,11 @@ export const createLeave = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Missing required fields' });
     }
 
-    const therapist = await Therapist.findOne({ userId: therapistId });
+    let therapist = await Therapist.findOne({ userId: therapistId });
+    if (!therapist) {
+      therapist = await Therapist.findById(therapistId);
+    }
+    
     if (!therapist) {
       return res.status(404).json({ success: false, message: 'Therapist not found' });
     }
@@ -44,9 +52,22 @@ export const createLeave = async (req, res, next) => {
       therapistName: therapist.name,
       startDate,
       endDate,
-      reason,
+      reason: reason || '',
       status: 'Pending',
     });
+
+    // Notify Admins
+    const admins = await User.find({ role: 'admin' }).select('_id');
+    if (admins.length > 0) {
+      await Notification.insertMany(
+        admins.map(admin => ({
+          targetUserId: admin._id,
+          title: 'New Leave Request',
+          message: `${therapist.name} has requested leave from ${startDate} to ${endDate}.`,
+          type: 'alert'
+        }))
+      );
+    }
 
     res.status(201).json({ success: true, data: leave });
   } catch (error) {
@@ -71,6 +92,16 @@ export const updateLeaveStatus = async (req, res, next) => {
 
     if (!leave) {
       return res.status(404).json({ success: false, message: 'Leave request not found' });
+    }
+
+    const therapist = await Therapist.findById(leave.therapistId);
+    if (therapist && therapist.userId) {
+      await Notification.create({
+        targetUserId: therapist.userId,
+        title: `Leave Request ${status}`,
+        message: `Your leave request from ${leave.startDate} to ${leave.endDate} has been ${status.toLowerCase()} by the administrator.`,
+        type: status === 'Approved' ? 'success' : 'alert'
+      });
     }
 
     const io = req.app.get('io');

@@ -159,4 +159,3 @@ export const leaveApi = {
   create: (payload) => request('/leaves', { method: 'POST', body: JSON.stringify(payload) }).then((r) => r.data),
   updateStatus: (id, status) => request(`/leaves/${id}/status`, { method: 'PUT', body: JSON.stringify({ status }) }).then((r) => r.data),
 };
-
