@@ -1,34 +1,47 @@
-import React, { useState } from 'react';
-import { Calendar as CalendarIcon, FileText, CheckCircle, Clock } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Calendar as CalendarIcon, FileText, CheckCircle, Clock, XCircle } from 'lucide-react';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
+import { leaveApi } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 
 const TherapistLeave = () => {
-  const [leaveRequests, setLeaveRequests] = useState([
-    { id: 1, startDate: '2026-06-10', endDate: '2026-06-12', reason: 'Personal Leave', status: 'Approved' },
-    { id: 2, startDate: '2026-07-01', endDate: '2026-07-05', reason: 'Conference', status: 'Pending' }
-  ]);
+  const { user } = useAuth();
+  const [leaveRequests, setLeaveRequests] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    if (user?.id) {
+      leaveApi.getForTherapist(user.id)
+        .then(data => setLeaveRequests(data))
+        .catch(err => console.error("Error fetching leaves", err))
+        .finally(() => setIsLoading(false));
+    }
+  }, [user]);
   
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [reason, setReason] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!startDate || !endDate) return;
+    if (!startDate || !endDate || !user?.id) return;
     
-    const newReq = {
-      id: Date.now(),
-      startDate,
-      endDate,
-      reason,
-      status: 'Pending'
-    };
-    
-    setLeaveRequests([newReq, ...leaveRequests]);
-    setStartDate('');
-    setEndDate('');
-    setReason('');
+    try {
+      const newReq = await leaveApi.create({
+        therapistId: user.id,
+        startDate,
+        endDate,
+        reason
+      });
+      
+      setLeaveRequests([newReq, ...leaveRequests]);
+      setStartDate('');
+      setEndDate('');
+      setReason('');
+    } catch (error) {
+      alert(error.message || 'Failed to submit leave request');
+    }
   };
 
   return (
@@ -64,7 +77,9 @@ const TherapistLeave = () => {
           <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1.5rem' }}>Request History</h2>
           
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            {leaveRequests.length > 0 ? leaveRequests.map((req) => (
+            {isLoading ? (
+              <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-light)' }}>Loading requests...</div>
+            ) : leaveRequests.length > 0 ? leaveRequests.map((req) => (
               <div key={req.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', backgroundColor: 'var(--bg-main)', borderRadius: 'var(--radius-md)', borderLeft: `4px solid ${req.status === 'Approved' ? 'var(--success)' : req.status === 'Pending' ? 'var(--warning)' : 'var(--error)'}` }}>
                 <div>
                   <div style={{ fontWeight: 600, marginBottom: '0.25rem' }}>
@@ -74,8 +89,8 @@ const TherapistLeave = () => {
                     {req.reason || 'No reason provided'}
                   </div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', fontWeight: 600, color: req.status === 'Approved' ? 'var(--success)' : 'var(--warning)' }}>
-                  {req.status === 'Approved' ? <CheckCircle size={16} /> : <Clock size={16} />}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', fontWeight: 600, color: req.status === 'Approved' ? 'var(--success)' : req.status === 'Pending' ? 'var(--warning)' : 'var(--error)' }}>
+                  {req.status === 'Approved' ? <CheckCircle size={16} /> : req.status === 'Pending' ? <Clock size={16} /> : <XCircle size={16} />}
                   {req.status}
                 </div>
               </div>

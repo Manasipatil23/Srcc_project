@@ -95,8 +95,8 @@ export const updateStatus = async (req, res, next) => {
       title: status === 'Approved' ? 'Account Approved' : 'Registration Not Approved',
       message:
         status === 'Approved'
-          ? 'Your therapist account has been verified by the hospital admin. You can now sign in to the Therapist Portal.'
-          : 'Your therapist registration was reviewed and not approved. Please contact the hospital administrator for more details.',
+          ? 'Your therapist account has been verified by the SRCC admin. You can now sign in to the Therapist Portal.'
+          : 'Your therapist registration was reviewed and not approved. Please contact the SRCC administrator for more details.',
       type: status === 'Approved' ? 'success' : 'alert',
     });
 

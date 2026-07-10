@@ -7,6 +7,7 @@ import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Avatar from '../../components/ui/Avatar';
 import { appointmentApi } from '../../services/api';
+import { socket } from '../../services/socket';
 
 const TherapistDashboard = () => {
   const { user } = useAuth();
@@ -17,7 +18,7 @@ const TherapistDashboard = () => {
   const [appointments, setAppointments] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
+  const fetchAppointments = () => {
     appointmentApi
       .getAll()
       .then((data) =>
@@ -25,7 +26,22 @@ const TherapistDashboard = () => {
       )
       .catch(() => setAppointments([]))
       .finally(() => setIsLoading(false));
-  }, [user?.name]);
+  };
+
+  useEffect(() => {
+    fetchAppointments();
+
+    const handleUpdate = (data) => {
+      if (user && data.therapistId === user.id) {
+        fetchAppointments();
+      }
+    };
+
+    socket.on('appointment_updated', handleUpdate);
+    return () => {
+      socket.off('appointment_updated', handleUpdate);
+    };
+  }, [user?.name, user?.id]);
 
   const todayAppointments = appointments.filter(a => a.date === today);
   const upcomingAppointments = appointments.filter(a => a.status === 'Upcoming');

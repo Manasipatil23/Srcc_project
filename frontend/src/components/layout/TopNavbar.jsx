@@ -31,7 +31,7 @@ const TopNavbar = () => {
   };
 
   const displayName = user?.name || 'Guest';
-  const displayRole = user?.role === 'admin' ? 'Hospital Admin' : user?.role === 'therapist' ? 'Therapist' : 'Patient';
+  const displayRole = user?.role === 'admin' ? 'SRCC Admin' : user?.role === 'therapist' ? 'Therapist' : 'Patient';
 
   return (
     <header style={{

@@ -1,9 +1,11 @@
 import express from 'express';
-import { getDefaultPatient, getPatientById } from '../controllers/patientController.js';
+import { getDefaultPatient, getPatientById, updatePatient, addDocument } from '../controllers/patientController.js';
 
 const router = express.Router();
 
 router.get('/default', getDefaultPatient);
 router.get('/:id', getPatientById);
+router.put('/:id', updatePatient);
+router.post('/:id/documents', addDocument);
 
 export default router;

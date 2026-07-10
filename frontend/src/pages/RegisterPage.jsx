@@ -15,7 +15,7 @@ const RegisterPage = () => {
     email: '',
     phone: '',
     dob: '',
-    hospitalName: '',
+    facilityName: '',
     specialty: '',
     qualification: '',
     experience: '',
@@ -120,7 +120,7 @@ const RegisterPage = () => {
         }),
       });
       if (isTherapist) {
-        alert('Registration submitted!\n\nYour account is pending verification by the hospital admin. You will be able to sign in once it is approved.');
+        alert('Registration submitted!\n\nYour account is pending verification by the SRCC admin. You will be able to sign in once it is approved.');
       }
       navigate('/login');
     } catch (err) {
@@ -222,14 +222,14 @@ const RegisterPage = () => {
             {isAdmin && (
               <div>
                 <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500, fontSize: '0.875rem' }}>
-                  Hospital Name
+                  Facility Name
                 </label>
                 <input
                   type="text"
-                  name="hospitalName"
+                  name="facilityName"
                   required
                   className="input-field"
-                  placeholder="E.g. SRCC Children's Hospital"
+                  placeholder="E.g. The Society for the Rehabilitation of Crippled Children (SRCC)"
                   onChange={handleChange}
                 />
               </div>

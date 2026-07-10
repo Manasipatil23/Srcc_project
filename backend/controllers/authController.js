@@ -124,13 +124,13 @@ export const login = async (req, res, next) => {
       if (therapistProfile?.status === 'Pending') {
         return res.status(403).json({
           success: false,
-          message: 'Your therapist account is awaiting admin approval. Please try again once an administrator verifies your registration.',
+          message: 'Your account approval request has been sent to the admin. Please wait for approval.',
         });
       }
       if (therapistProfile?.status === 'Rejected') {
         return res.status(403).json({
           success: false,
-          message: 'Your therapist registration was not approved. Please contact the hospital administrator for assistance.',
+          message: 'Your therapist registration was not approved. Please contact the SRCC administrator for assistance.',
         });
       }
     }

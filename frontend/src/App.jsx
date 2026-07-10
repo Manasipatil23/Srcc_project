@@ -28,6 +28,9 @@ import TherapistAvailability from './pages/therapist/TherapistAvailability';
 import TherapistLeave from './pages/therapist/TherapistLeave';
 import TherapistSettings from './pages/therapist/TherapistSettings';
 import AdminLeaves from './pages/AdminLeaves';
+import AccountsPage from './pages/AccountsPage';
+import ReportsPage from './pages/ReportsPage';
+import AdminCalendar from './pages/AdminCalendar';
 
 function App() {
   return (
@@ -42,8 +45,11 @@ function App() {
           <Route element={<Layout />}>
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/admin-dashboard" element={<AdminDashboard />} />
+            <Route path="/admin-calendar" element={<AdminCalendar />} />
             <Route path="/admin-reminders" element={<AdminReminders />} />
             <Route path="/admin-leaves" element={<AdminLeaves />} />
+            <Route path="/accounts" element={<AccountsPage />} />
+            <Route path="/reports" element={<ReportsPage />} />
             <Route path="/book" element={<AppointmentBooking />} />
             <Route path="/appointments" element={<MyAppointments />} />
             <Route path="/therapists" element={<TherapistsManagement />} />

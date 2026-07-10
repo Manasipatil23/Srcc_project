@@ -3,7 +3,7 @@ import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 
 const SystemSettings = () => {
-    const [hospitalName, setHospitalName] = useState('SRCC Children Hospital');
+    const [facilityName, setFacilityName] = useState('The Society for the Rehabilitation of Crippled Children (SRCC)');
     const [emailNotifications, setEmailNotifications] = useState(true);
     const [smsNotifications, setSmsNotifications] = useState(false);
 
@@ -25,7 +25,7 @@ const SystemSettings = () => {
                 </h1>
 
                 <p style={{ color: 'var(--text-secondary)' }}>
-                    Manage hospital preferences and notification settings.
+                    Manage SRCC centre preferences and notification settings.
                 </p>
             </div>
 
@@ -38,12 +38,12 @@ const SystemSettings = () => {
                     }}
                 >
                     <div>
-                        <label>Hospital Name</label>
+                        <label>Facility Name</label>
 
                         <input
                             className="input-field"
-                            value={hospitalName}
-                            onChange={(e) => setHospitalName(e.target.value)}
+                            value={facilityName}
+                            onChange={(e) => setFacilityName(e.target.value)}
                         />
                     </div>
 

@@ -1,5 +1,7 @@
 // Port 5001: macOS AirPlay Receiver occupies port 5000
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+// Default to the host serving the frontend so the app also works when
+// opened from another machine on the LAN (not just localhost).
+const API_BASE = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:5001/api`;
 
 const getToken = () => localStorage.getItem('srcc_token');
 
@@ -101,4 +103,60 @@ export const scheduleApi = {
 export const patientApi = {
   getDefault: () => request('/patients/default').then((r) => r.data),
   getById: (id) => request(`/patients/${id}`).then((r) => r.data),
+  update: (id, payload) =>
+    request(`/patients/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    }).then((r) => r.data),
+  addDocument: (id, payload) =>
+    request(`/patients/${id}/documents`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }).then((r) => r.data),
 };
+
+// ---------- Payments (accounts desk) ----------
+export const paymentApi = {
+  getAll: (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    return request(`/payments${query ? `?${query}` : ''}`).then((r) => r.data);
+  },
+  getSummary: () => request('/payments/summary').then((r) => r.data),
+  collect: (id, mode, notes) =>
+    request(`/payments/${id}/collect`, {
+      method: 'PUT',
+      body: JSON.stringify({ mode, notes }),
+    }).then((r) => r.data),
+  refund: (id, notes) =>
+    request(`/payments/${id}/refund`, {
+      method: 'PUT',
+      body: JSON.stringify({ notes }),
+    }).then((r) => r.data),
+  waive: (id, notes) =>
+    request(`/payments/${id}/waive`, {
+      method: 'PUT',
+      body: JSON.stringify({ notes }),
+    }).then((r) => r.data),
+};
+
+// ---------- Reports ----------
+export const reportApi = {
+  getSummary: (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    return request(`/reports/summary${query ? `?${query}` : ''}`).then((r) => r.data);
+  },
+  // Returns a URL the browser can download a CSV from directly.
+  csvUrl: (report, params = {}) => {
+    const query = new URLSearchParams({ ...params, format: 'csv' }).toString();
+    return `${API_BASE}/reports/${report}?${query}`;
+  },
+};
+
+// ---------- Leaves ----------
+export const leaveApi = {
+  getAll: () => request('/leaves').then((r) => r.data),
+  getForTherapist: (therapistId) => request(`/leaves/therapist/${therapistId}`).then((r) => r.data),
+  create: (payload) => request('/leaves', { method: 'POST', body: JSON.stringify(payload) }).then((r) => r.data),
+  updateStatus: (id, status) => request(`/leaves/${id}/status`, { method: 'PUT', body: JSON.stringify({ status }) }).then((r) => r.data),
+};
+

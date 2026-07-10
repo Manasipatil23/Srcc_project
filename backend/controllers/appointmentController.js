@@ -3,6 +3,7 @@ import Appointment from '../models/Appointment.js';
 import Therapist from '../models/Therapist.js';
 import Schedule from '../models/Schedule.js';
 import Notification from '../models/Notification.js';
+import Payment from '../models/Payment.js';
 
 // GET /api/appointments?userId=&therapistId=&status=
 export const getAppointments = async (req, res, next) => {
@@ -64,14 +65,30 @@ export const bookAppointment = async (req, res, next) => {
       type,
     });
 
+    // Raise a pending payment so the accounts desk can collect it at the centre.
+    const payment = await Payment.create({
+      appointmentId: appointment._id,
+      patientId: appointment.patientId,
+      patientName: appointment.patientName,
+      therapistName: therapist.name,
+      serviceType: type,
+      appointmentDate: date,
+      amount: therapist.fee ?? 500,
+    });
+
     await Notification.create({
       targetUserId: appointment.patientId,
       title: 'Appointment Booked',
-      message: `Your ${type} with ${therapist.name} is confirmed for ${date} at ${time}.`,
+      message: `Your ${type} with ${therapist.name} is confirmed for ${date} at ${time}. Consultation fee: ₹${payment.amount} (payable at the centre).`,
       type: 'success',
     });
 
-    res.status(201).json({ success: true, data: appointment });
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('appointment_updated', { therapistId: therapist._id });
+    }
+
+    res.status(201).json({ success: true, data: appointment, payment });
   } catch (error) {
     next(error);
   }
@@ -119,6 +136,11 @@ export const rescheduleAppointment = async (req, res, next) => {
       type: 'success',
     });
 
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('appointment_updated', { therapistId: appointment.therapistId });
+    }
+
     res.json({ success: true, data: appointment });
   } catch (error) {
     next(error);
@@ -147,12 +169,23 @@ export const updateAppointmentStatus = async (req, res, next) => {
 
     // Release the slot if the appointment was cancelled
     if (status === 'Cancelled') {
+      // Drop any uncollected payment for this appointment; paid ones stay
+      // on the books so the accounts desk can process a refund explicitly.
+      await Payment.updateMany(
+        { appointmentId: appointment._id, status: 'Pending' },
+        { status: 'Cancelled' }
+      );
       await Notification.create({
         targetUserId: appointment.patientId,
         title: 'Appointment Cancelled',
         message: `Your session with ${appointment.therapistName} on ${appointment.date} at ${appointment.time} has been cancelled.`,
         type: 'alert',
       });
+    }
+
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('appointment_updated', { therapistId: appointment.therapistId });
     }
 
     res.json({ success: true, data: appointment });

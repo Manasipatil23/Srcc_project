@@ -4,6 +4,7 @@ import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import { useAuth } from '../context/AuthContext';
 import { therapistApi, scheduleApi, appointmentApi } from '../services/api';
+import { socket } from '../services/socket';
 import Avatar from '../components/ui/Avatar';
 import { Calendar as CalendarIcon, Clock, User, CheckCircle, ChevronRight, ChevronLeft, Star } from 'lucide-react';
 
@@ -22,6 +23,22 @@ const AppointmentBooking = () => {
   useEffect(() => {
     therapistApi.getAll().then(setTherapists).catch(() => setTherapists([]));
   }, []);
+
+  useEffect(() => {
+    const handleUpdate = (data) => {
+      if (selectedTherapist && data.therapistId === selectedTherapist.id) {
+        setRefreshTrigger(prev => prev + 1);
+      }
+    };
+    
+    socket.on('appointment_updated', handleUpdate);
+    socket.on('leave_updated', handleUpdate);
+    
+    return () => {
+      socket.off('appointment_updated', handleUpdate);
+      socket.off('leave_updated', handleUpdate);
+    };
+  }, [selectedTherapist]);
 
   useEffect(() => {
     if (!selectedTherapist || !selectedDate) {
@@ -238,6 +255,16 @@ const AppointmentBooking = () => {
                     <p style={{ color: 'var(--text-light)', fontSize: '0.875rem', marginBottom: '0.25rem' }}>Time</p>
                     <p style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 500 }}><Clock size={18} color="var(--primary)" /> {selectedSlot}</p>
                   </div>
+                </div>
+
+                <div style={{ borderTop: '1px solid var(--border)', paddingTop: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <p style={{ color: 'var(--text-light)', fontSize: '0.875rem', marginBottom: '0.25rem' }}>Consultation Fee</p>
+                    <p style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--primary)' }}>₹{selectedTherapist?.fee ?? 500}</p>
+                  </div>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', maxWidth: '260px', textAlign: 'right' }}>
+                    Payable at the SRCC accounts desk before your session.
+                  </p>
                 </div>
               </div>
             </motion.div>

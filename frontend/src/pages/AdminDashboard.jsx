@@ -1,22 +1,45 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Card from '../components/ui/Card';
 import { Users, Calendar, Activity, ArrowRight, CheckCircle, XCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { leaveApi } from '../services/api';
+import { socket } from '../services/socket';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  const [leaveRequests, setLeaveRequests] = useState([
-    { id: 1, therapist: 'Dr. Sarah Jenkins', startDate: '2026-07-01', endDate: '2026-07-05', reason: 'Conference', status: 'Pending' },
-    { id: 2, therapist: 'Dr. Anil Kumar', startDate: '2026-06-15', endDate: '2026-06-16', reason: 'Personal Leave', status: 'Pending' },
-    { id: 3, therapist: 'Dr. Emily Chen', startDate: '2026-05-10', endDate: '2026-05-12', reason: 'Sick Leave', status: 'Approved' },
-    { id: 4, therapist: 'Dr. Sarah Jenkins', startDate: '2026-04-01', endDate: '2026-04-02', reason: 'Personal Leave', status: 'Rejected' }
-  ]);
+  const [leaveRequests, setLeaveRequests] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const handleLeaveAction = (id, action) => {
-    setLeaveRequests(prev => prev.map(req => req.id === id ? { ...req, status: action } : req));
+  const fetchLeaves = () => {
+    leaveApi.getAll()
+      .then(data => setLeaveRequests(data))
+      .catch(err => console.error("Error fetching leaves", err))
+      .finally(() => setIsLoading(false));
+  };
+
+  useEffect(() => {
+    fetchLeaves();
+
+    const handleUpdate = () => {
+      fetchLeaves();
+    };
+
+    socket.on('leave_updated', handleUpdate);
+    return () => {
+      socket.off('leave_updated', handleUpdate);
+    };
+  }, []);
+
+  const handleLeaveAction = async (id, action) => {
+    try {
+      const updatedLeave = await leaveApi.updateStatus(id, action);
+      setLeaveRequests(prev => prev.map(req => req.id === id ? { ...req, status: action } : req));
+    } catch (err) {
+      alert(err.message || 'Failed to update leave status');
+    }
   };
 
   const stats = [
@@ -29,7 +52,7 @@ const AdminDashboard = () => {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
       <div>
         <h1 style={{ fontSize: '1.75rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>Admin Dashboard</h1>
-        <p style={{ color: 'var(--text-secondary)' }}>Welcome back, {user?.name || 'Administrator'}. Here is your hospital overview.</p>
+        <p style={{ color: 'var(--text-secondary)' }}>Welcome back, {user?.name || 'Administrator'}. Here is your SRCC centre overview.</p>
       </div>
 
       {/* Stats Cards */}
@@ -51,11 +74,13 @@ const AdminDashboard = () => {
         <Card style={{ minHeight: '300px' }}>
           <h3 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1.5rem' }}>Pending Leave Requests</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            {leaveRequests.filter(req => req.status === 'Pending').length > 0 ? (
+            {isLoading ? (
+              <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-light)' }}>Loading requests...</div>
+            ) : leaveRequests.filter(req => req.status === 'Pending').length > 0 ? (
               leaveRequests.filter(req => req.status === 'Pending').map(req => (
                 <div key={req.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', backgroundColor: 'var(--bg-main)', borderLeft: '4px solid var(--warning)', borderRadius: 'var(--radius-md)' }}>
                   <div>
-                    <h4 style={{ fontWeight: 600, marginBottom: '0.25rem' }}>{req.therapist}</h4>
+                    <h4 style={{ fontWeight: 600, marginBottom: '0.25rem' }}>{req.therapistName}</h4>
                     <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
                       {req.startDate} to {req.endDate} • {req.reason}
                     </div>
@@ -149,11 +174,13 @@ const AdminDashboard = () => {
       <Card>
         <h3 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1.5rem' }}>Leave Request History</h3>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          {leaveRequests.filter(req => req.status !== 'Pending').length > 0 ? (
+          {isLoading ? (
+            <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-light)' }}>Loading history...</div>
+          ) : leaveRequests.filter(req => req.status !== 'Pending').length > 0 ? (
             leaveRequests.filter(req => req.status !== 'Pending').map(req => (
               <div key={req.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', backgroundColor: 'var(--bg-main)', borderLeft: `4px solid ${req.status === 'Approved' ? 'var(--success)' : 'var(--error)'}`, borderRadius: 'var(--radius-md)' }}>
                 <div>
-                  <h4 style={{ fontWeight: 600, marginBottom: '0.25rem' }}>{req.therapist}</h4>
+                  <h4 style={{ fontWeight: 600, marginBottom: '0.25rem' }}>{req.therapistName}</h4>
                   <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
                     {req.startDate} to {req.endDate} • {req.reason}
                   </div>

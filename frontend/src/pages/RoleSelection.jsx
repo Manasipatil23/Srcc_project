@@ -33,7 +33,7 @@ const RoleSelection = () => {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
           <HeartPulse size={36} color="var(--primary)" />
           <h1 style={{ color: 'var(--primary)', fontSize: '2rem', fontWeight: 'bold' }}>
-            SRCC Children's Hospital
+            The Society for the Rehabilitation of Crippled Children (SRCC)
           </h1>
         </div>
         <h2 style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--text-primary)' }}>
@@ -105,7 +105,7 @@ const RoleSelection = () => {
               <ShieldCheck size={40} />
             </div>
             <div style={{ textAlign: 'center' }}>
-              <h3 style={{ fontSize: '1.5rem', fontWeight: 600, marginBottom: '0.5rem' }}>Hospital Admin</h3>
+              <h3 style={{ fontSize: '1.5rem', fontWeight: 600, marginBottom: '0.5rem' }}>SRCC Admin</h3>
               <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Manage therapists and schedule overviews.</p>
             </div>
             <div style={{ color: 'var(--accent)', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600, marginTop: 'auto' }}>

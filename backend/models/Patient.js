@@ -5,6 +5,7 @@ const documentSchema = new mongoose.Schema(
     name: { type: String, required: true, trim: true },
     size: { type: String, required: true },
     date: { type: String, required: true },
+    dataUrl: { type: String, required: true },
   },
   { _id: true }
 );
@@ -35,6 +36,7 @@ patientSchema.set('toJSON', {
         name: d.name,
         size: d.size,
         date: d.date,
+        dataUrl: d.dataUrl,
       }));
     }
     return ret;

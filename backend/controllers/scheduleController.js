@@ -1,6 +1,7 @@
 import Schedule from '../models/Schedule.js';
 import Therapist from '../models/Therapist.js';
 import Appointment from '../models/Appointment.js';
+import Leave from '../models/Leave.js';
 
 // Default global slots template
 const DEFAULT_GLOBAL_SLOTS = [
@@ -126,6 +127,19 @@ export const getAvailableSlotsForDate = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Invalid date format' });
     }
     const dayName = daysOfWeek[parsedDate.getUTCDay()];
+
+    // Check if therapist is on approved leave for this date
+    const dateString = date;
+    const leaveExists = await Leave.exists({
+      therapistId,
+      status: 'Approved',
+      startDate: { $lte: dateString },
+      endDate: { $gte: dateString }
+    });
+    
+    if (leaveExists) {
+      return res.json({ success: true, count: 0, data: [] });
+    }
 
     const hasAnyWeeklySchedule = await Schedule.exists({ therapistId, day: { $ne: null } });
 

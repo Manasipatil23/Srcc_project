@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Calendar, LayoutDashboard, Users, Clock, Bell, LogOut, AlarmClock, MessageSquare, CalendarCheck, CalendarOff, Settings } from 'lucide-react';
+import { Calendar, LayoutDashboard, Users, Clock, Bell, LogOut, AlarmClock, MessageSquare, CalendarCheck, CalendarOff, Settings, IndianRupee, FileBarChart2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 const Sidebar = () => {
@@ -18,10 +18,13 @@ const Sidebar = () => {
 
   const adminLinks = [
     { name: 'Dashboard', path: '/admin-dashboard', icon: <LayoutDashboard size={20} /> },
+    { name: 'System Calendar', path: '/admin-calendar', icon: <Calendar size={20} /> },
     { name: 'Therapists', path: '/therapists', icon: <Users size={20} /> },
     { name: 'Schedule Patient', path: '/schedule-patient', icon: <Calendar size={20} /> },
     { name: 'All Appointments', path: '/appointments', icon: <Calendar size={20} /> },
     { name: 'Leave Requests', path: '/admin-leaves', icon: <CalendarOff size={20} /> },
+    { name: 'Accounts', path: '/accounts', icon: <IndianRupee size={20} /> },
+    { name: 'Reports', path: '/reports', icon: <FileBarChart2 size={20} /> },
     { name: 'Notifications', path: '/notifications', icon: <Bell size={20} /> },
     { name: 'Reminders', path: '/admin-reminders', icon: <AlarmClock size={20} /> }
   ];
@@ -56,7 +59,7 @@ const Sidebar = () => {
             </span>
             <span>SRCC</span>
           </div>
-          <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Children's Hospital</span>
+          <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Society for the Rehabilitation of Crippled Children</span>
         </h1>
       </div>
 

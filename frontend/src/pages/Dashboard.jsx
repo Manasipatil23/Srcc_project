@@ -3,6 +3,7 @@ import Card from '../components/ui/Card';
 import { Users, Calendar, Clock, XCircle, TrendingUp } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { appointmentApi, therapistApi, scheduleApi } from '../services/api';
+import { socket } from '../services/socket';
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -10,12 +11,24 @@ const Dashboard = () => {
   const [therapistCount, setTherapistCount] = useState(0);
   const [slotStats, setSlotStats] = useState({ available: 0, total: 0 });
 
-  useEffect(() => {
+  const fetchAppointments = () => {
     if (!user) return;
     appointmentApi
       .getAll({ userId: user.id })
       .then(setAppointments)
       .catch(() => setAppointments([]));
+  };
+
+  useEffect(() => {
+    if (!user) return;
+    fetchAppointments();
+
+    const handleAppointmentUpdate = () => {
+      fetchAppointments();
+    };
+
+    socket.on('appointment_updated', handleAppointmentUpdate);
+    
     therapistApi
       .getAll()
       .then((list) => setTherapistCount(list.length))
@@ -27,6 +40,10 @@ const Dashboard = () => {
         setSlotStats({ available: all.filter((s) => s.available).length, total: all.length });
       })
       .catch(() => setSlotStats({ available: 0, total: 0 }));
+
+    return () => {
+      socket.off('appointment_updated', handleAppointmentUpdate);
+    };
   }, [user]);
 
   const today = new Date().toISOString().split('T')[0];
@@ -47,10 +64,7 @@ const Dashboard = () => {
           <h1 style={{ fontSize: '1.75rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>Patient Dashboard</h1>
           <p style={{ color: 'var(--text-secondary)' }}>Welcome back, {user?.name?.split(' ')[0] || 'there'}! Here is your overview for today.</p>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--success)', backgroundColor: 'var(--success-bg)', padding: '0.5rem 1rem', borderRadius: 'var(--radius-full)', fontWeight: 500, fontSize: '0.875rem' }}>
-          <TrendingUp size={16} />
-          Health Score: 95%
-        </div>
+
       </div>
 
       {/* Stats Grid */}
