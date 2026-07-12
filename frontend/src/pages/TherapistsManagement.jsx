@@ -19,6 +19,8 @@ const TherapistsManagement = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [actionBusyId, setActionBusyId] = useState(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
+  const [rejectReason, setRejectReason] = useState('');
 
   const [newName, setNewName] = useState('');
   const [newSpecialty, setNewSpecialty] = useState('');
@@ -50,16 +52,27 @@ const TherapistsManagement = () => {
     (t) => !t.status || t.status === 'Approved'
   );
 
-  const handleStatusChange = async (therapist, status) => {
+  const handleStatusChange = async (therapist, status, reason = '') => {
     setActionBusyId(therapist.id);
     try {
-      await therapistApi.updateStatus(therapist.id, status);
+      await therapistApi.updateStatus(therapist.id, status, reason);
       await loadTherapists();
+      setIsRejectModalOpen(false);
+      setRejectReason('');
     } catch (err) {
       alert(err.message || 'Failed to update therapist status.');
     } finally {
       setActionBusyId(null);
     }
+  };
+
+  const handleRejectClick = (therapist) => {
+    setSelectedTherapist(therapist);
+    setIsRejectModalOpen(true);
+  };
+
+  const handleRejectConfirm = () => {
+    handleStatusChange(selectedTherapist, 'Rejected', rejectReason);
   };
 
   const handleRemoveClick = (therapist) => {
@@ -211,6 +224,23 @@ const TherapistsManagement = () => {
                   <p style={{ color: 'var(--text-secondary)', fontSize: '0.8125rem' }}>
                     {therapist.email} · {therapist.phone}
                   </p>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginTop: '0.5rem' }}>
+                    {therapist.document && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const w = window.open('about:blank');
+                          const html = therapist.document.startsWith('data:application/pdf')
+                            ? `<iframe src="${therapist.document}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`
+                            : `<img src="${therapist.document}" style="max-width:100%;" />`;
+                          w.document.write(html);
+                        }}
+                      >
+                        View Verification Document
+                      </Button>
+                    )}
+                  </div>
                 </div>
 
                 <div style={{ display: 'flex', gap: '0.75rem' }}>
@@ -225,7 +255,7 @@ const TherapistsManagement = () => {
                     <Button
                       style={{ backgroundColor: '#ef4444', color: 'white', display: 'flex', alignItems: 'center', gap: '0.375rem' }}
                       disabled={actionBusyId === therapist.id}
-                      onClick={() => handleStatusChange(therapist, 'Rejected')}
+                      onClick={() => handleRejectClick(therapist)}
                     >
                       <XCircle size={16} /> Reject
                     </Button>
@@ -405,6 +435,48 @@ const TherapistsManagement = () => {
               onClick={handleRemoveConfirm}
             >
               Yes, Remove
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={isRejectModalOpen}
+        onClose={() => {
+          setIsRejectModalOpen(false);
+          setRejectReason('');
+        }}
+        title="Reject Therapist Registration"
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <p>
+            Please provide a reason for rejecting <strong>{selectedTherapist?.name}</strong>'s registration. This will be emailed to them.
+          </p>
+
+          <textarea
+            className="input-field"
+            placeholder="Reason for rejection (e.g. Invalid document, insufficient experience)"
+            value={rejectReason}
+            onChange={(e) => setRejectReason(e.target.value)}
+            style={{ minHeight: '100px', resize: 'vertical' }}
+          ></textarea>
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1rem' }}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsRejectModalOpen(false);
+                setRejectReason('');
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              style={{ backgroundColor: '#ef4444', color: 'white' }}
+              disabled={actionBusyId === selectedTherapist?.id || !rejectReason.trim()}
+              onClick={handleRejectConfirm}
+            >
+              Reject Account
             </Button>
           </div>
         </div>

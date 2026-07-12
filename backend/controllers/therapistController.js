@@ -74,7 +74,7 @@ export const updateTherapist = async (req, res, next) => {
 // PUT /api/therapists/:id/status  (admin only) — approve or reject a registration
 export const updateStatus = async (req, res, next) => {
   try {
-    const { status } = req.body;
+    const { status, rejectionReason } = req.body;
 
     if (!['Approved', 'Rejected'].includes(status)) {
       return res.status(400).json({
@@ -89,6 +89,12 @@ export const updateStatus = async (req, res, next) => {
     }
 
     therapist.status = status;
+    if (status === 'Rejected') {
+      therapist.rejectionReason = rejectionReason || 'No specific reason provided by the administrator.';
+    } else {
+      therapist.rejectionReason = ''; // Clear any previous rejection
+    }
+    
     await therapist.save();
 
     await Notification.create({
@@ -104,7 +110,7 @@ export const updateStatus = async (req, res, next) => {
     if (status === 'Approved') {
       const emailMessage = `
         <h1>Your account has been approved</h1>
-        <p>You can now sign in to access your therapist dashboard at SRCC Hospital.</p>
+        <p>Your therapist account has been approved by the SRCC admin. You can now sign in to your dashboard.</p>
         <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/login">Sign In Now</a>
       `;
       try {
@@ -115,6 +121,23 @@ export const updateStatus = async (req, res, next) => {
         });
       } catch (err) {
         console.error('Failed to send approval email', err);
+      }
+    } else if (status === 'Rejected') {
+      const emailMessage = `
+        <h1>Therapist Registration Rejected</h1>
+        <p>We have reviewed your registration as a therapist at SRCC Hospital and unfortunately, it has not been approved at this time.</p>
+        <p><strong>Reason for rejection:</strong><br/>
+        ${therapist.rejectionReason}</p>
+        <p>Please contact the SRCC administrator for further details or to appeal this decision.</p>
+      `;
+      try {
+        await sendEmail({
+          email: therapist.email,
+          subject: 'SRCC Hospital - Registration Update',
+          html: emailMessage,
+        });
+      } catch (err) {
+        console.error('Failed to send rejection email', err);
       }
     }
 

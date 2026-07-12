@@ -83,23 +83,53 @@ const AdminLeaves = () => {
               <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
                 Loading leave requests...
               </div>
-            ) : leaveRequests.filter(req => req.status === 'Pending').length > 0 ? (
-              leaveRequests.filter(req => req.status === 'Pending').map(req => (
-                <div key={req.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', backgroundColor: 'var(--bg-main)', borderLeft: '4px solid var(--warning)', borderRadius: 'var(--radius-md)' }}>
-                  <div>
-                    <h4 style={{ fontWeight: 600, marginBottom: '0.25rem' }}>{req.therapistName}</h4>
-                    <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-                      {req.startDate} to {req.endDate} • {req.reason || 'No reason provided'}
+            ) : leaveRequests.filter(req => req.status === 'Pending' || req.status === 'Pending Re-Approval').length > 0 ? (
+              leaveRequests.filter(req => req.status === 'Pending' || req.status === 'Pending Re-Approval').map(req => (
+                <div key={req.id} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', padding: '1rem', backgroundColor: 'var(--bg-main)', borderLeft: req.status === 'Pending Re-Approval' ? '4px solid var(--primary)' : '4px solid var(--warning)', borderRadius: 'var(--radius-md)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div>
+                      <h4 style={{ fontWeight: 600, marginBottom: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        {req.therapistName}
+                        {req.status === 'Pending Re-Approval' && (
+                          <span style={{ fontSize: '0.75rem', padding: '2px 8px', borderRadius: '12px', backgroundColor: 'var(--primary-light)', color: 'var(--primary)' }}>Edit Request</span>
+                        )}
+                      </h4>
+                      
+                      {req.status === 'Pending' ? (
+                        <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+                          {req.startDate} to {req.endDate} • {req.reason || 'No reason provided'}
+                        </div>
+                      ) : null}
+                    </div>
+                    
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <button onClick={() => handleLeaveAction(req.id, 'Approved')} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '36px', height: '36px', borderRadius: '50%', border: 'none', backgroundColor: 'var(--success-bg)', color: 'var(--success)', cursor: 'pointer', transition: 'transform 0.2s' }} className="hover-scale" title="Approve">
+                        <CheckCircle size={20} />
+                      </button>
+                      <button onClick={() => handleLeaveAction(req.id, 'Rejected')} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '36px', height: '36px', borderRadius: '50%', border: 'none', backgroundColor: 'var(--error-bg)', color: 'var(--error)', cursor: 'pointer', transition: 'transform 0.2s' }} className="hover-scale" title="Reject">
+                        <XCircle size={20} />
+                      </button>
                     </div>
                   </div>
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <button onClick={() => handleLeaveAction(req.id, 'Approved')} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '36px', height: '36px', borderRadius: '50%', border: 'none', backgroundColor: 'var(--success-bg)', color: 'var(--success)', cursor: 'pointer', transition: 'transform 0.2s' }} className="hover-scale" title="Approve">
-                      <CheckCircle size={20} />
-                    </button>
-                    <button onClick={() => handleLeaveAction(req.id, 'Rejected')} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '36px', height: '36px', borderRadius: '50%', border: 'none', backgroundColor: 'var(--error-bg)', color: 'var(--error)', cursor: 'pointer', transition: 'transform 0.2s' }} className="hover-scale" title="Reject">
-                      <XCircle size={20} />
-                    </button>
-                  </div>
+
+                  {req.status === 'Pending Re-Approval' && req.pendingEdit && (
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', backgroundColor: 'var(--bg-surface)', padding: '1rem', borderRadius: 'var(--radius-sm)' }}>
+                      <div>
+                        <h5 style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-light)', marginBottom: '0.5rem' }}>Original</h5>
+                        <p style={{ fontSize: '0.875rem', marginBottom: '0.25rem' }}><strong>Dates:</strong> {req.startDate} to {req.endDate}</p>
+                        <p style={{ fontSize: '0.875rem' }}><strong>Reason:</strong> {req.reason || 'None'}</p>
+                      </div>
+                      <div style={{ borderLeft: '2px solid var(--border)', paddingLeft: '1rem' }}>
+                        <h5 style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--primary)', marginBottom: '0.5rem' }}>Updated</h5>
+                        <p style={{ fontSize: '0.875rem', marginBottom: '0.25rem' }}><strong>Dates:</strong> {req.pendingEdit.startDate} to {req.pendingEdit.endDate}</p>
+                        <p style={{ fontSize: '0.875rem', marginBottom: '0.5rem' }}><strong>Reason:</strong> {req.pendingEdit.reason || 'None'}</p>
+                        <div style={{ backgroundColor: 'var(--warning-light)', padding: '0.5rem', borderRadius: '4px', borderLeft: '2px solid var(--warning)' }}>
+                          <p style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--warning)', marginBottom: '0.25rem' }}>Reason for Edit:</p>
+                          <p style={{ fontSize: '0.875rem' }}>{req.pendingEdit.editReason}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))
             ) : (
@@ -117,8 +147,8 @@ const AdminLeaves = () => {
               <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
                 Loading leave requests...
               </div>
-            ) : leaveRequests.filter(req => req.status !== 'Pending').length > 0 ? (
-              leaveRequests.filter(req => req.status !== 'Pending').map(req => (
+            ) : leaveRequests.filter(req => req.status !== 'Pending' && req.status !== 'Pending Re-Approval').length > 0 ? (
+              leaveRequests.filter(req => req.status !== 'Pending' && req.status !== 'Pending Re-Approval').map(req => (
                 <div key={req.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', backgroundColor: 'var(--bg-main)', borderLeft: `4px solid ${req.status === 'Approved' ? 'var(--success)' : 'var(--error)'}`, borderRadius: 'var(--radius-md)' }}>
                   <div>
                     <h4 style={{ fontWeight: 600, marginBottom: '0.25rem' }}>{req.therapistName}</h4>

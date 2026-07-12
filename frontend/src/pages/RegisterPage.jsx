@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
-import { ArrowLeft, ShieldCheck, HeartPulse, Stethoscope, CheckCircle } from 'lucide-react';
+import { ArrowLeft, UserCog, HeartPulse, Stethoscope, CheckCircle, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { authApi } from '../services/api';
 
@@ -59,16 +59,40 @@ const RegisterPage = () => {
     qualification: '',
     experience: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    document: '' // base64 string
   });
 
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const [enteredOtp, setEnteredOtp] = useState('');
   const [isOtpSent, setIsOtpSent] = useState(false);
   const [isEmailVerified, setIsEmailVerified] = useState(false);
   const [isOtpLoading, setIsOtpLoading] = useState(false);
+  const [resendTimer, setResendTimer] = useState(0);
+  const [expiryTimer, setExpiryTimer] = useState(0);
+
+  React.useEffect(() => {
+    let interval;
+    if (resendTimer > 0) {
+      interval = setInterval(() => setResendTimer(prev => prev - 1), 1000);
+    }
+    return () => clearInterval(interval);
+  }, [resendTimer]);
+
+  React.useEffect(() => {
+    let interval;
+    if (expiryTimer > 0 && isOtpSent && !isEmailVerified) {
+      interval = setInterval(() => setExpiryTimer(prev => prev - 1), 1000);
+    } else if (expiryTimer === 0 && isOtpSent && !isEmailVerified) {
+      setError('OTP has expired. Please resend.');
+      setIsOtpSent(false);
+    }
+    return () => clearInterval(interval);
+  }, [expiryTimer, isOtpSent, isEmailVerified]);
 
   const isAdmin = selectedRole === 'admin';
   const isTherapist = selectedRole === 'therapist';
@@ -82,6 +106,22 @@ const RegisterPage = () => {
       setIsOtpSent(false);
       setIsEmailVerified(false);
       setEnteredOtp('');
+    }
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        setError('Document must be less than 5MB');
+        e.target.value = '';
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData({ ...formData, document: reader.result });
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -103,6 +143,8 @@ const RegisterPage = () => {
       await authApi.sendOtp({ email: formData.email });
       setIsOtpSent(true);
       setIsEmailVerified(false);
+      setResendTimer(30);
+      setExpiryTimer(600);
       alert('OTP sent successfully to your email address!');
     } catch (err) {
       setError(err.message || 'Failed to send OTP.');
@@ -123,6 +165,7 @@ const RegisterPage = () => {
     try {
       await authApi.verifyOtp({ email: formData.email, otp: enteredOtp });
       setIsEmailVerified(true);
+      setExpiryTimer(0);
       setError('');
     } catch (err) {
       setError(err.message || 'Invalid OTP. Please try again.');
@@ -166,6 +209,11 @@ const RegisterPage = () => {
       return;
     }
 
+    if (isTherapist && !formData.document) {
+      setError('Please upload the required verification document (License/Degree).');
+      return;
+    }
+
     setIsLoading(true);
     try {
       const res = await register({
@@ -179,6 +227,7 @@ const RegisterPage = () => {
           specialty: formData.specialty,
           qualification: formData.qualification,
           experience: formData.experience,
+          document: formData.document,
         }),
       });
       alert(res.message || 'Registration successful!');
@@ -245,7 +294,7 @@ const RegisterPage = () => {
               marginBottom: '1rem'
             }}>
               {isAdmin
-                ? <ShieldCheck size={32} color="var(--accent)" />
+                ? <UserCog size={32} color="var(--accent)" />
                 : isTherapist
                   ? <Stethoscope size={32} color="#8b5cf6" />
                   : <HeartPulse size={32} color="var(--primary)" />}
@@ -350,6 +399,7 @@ const RegisterPage = () => {
                   type="date"
                   name="dob"
                   required
+                  max={new Date().toISOString().split('T')[0]}
                   className="input-field"
                   onChange={handleChange}
                 />
@@ -402,6 +452,21 @@ const RegisterPage = () => {
                     onChange={handleChange}
                   />
                 </div>
+
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500, fontSize: '0.875rem' }}>
+                    Verification Document (License/Degree)
+                  </label>
+                  <input
+                    type="file"
+                    accept="image/*,.pdf"
+                    required
+                    className="input-field"
+                    onChange={handleFileChange}
+                    style={{ padding: '0.4rem' }}
+                  />
+                  <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>Max 5MB. PDF or Image format.</p>
+                </div>
               </>
             )}
 
@@ -410,14 +475,24 @@ const RegisterPage = () => {
                 <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500, fontSize: '0.875rem' }}>
                   Password
                 </label>
-                <input
-                  type="password"
-                  name="password"
-                  required
-                  className="input-field"
-                  placeholder="Minimum 8 characters"
-                  onChange={handleChange}
-                />
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    name="password"
+                    required
+                    className="input-field"
+                    placeholder="Minimum 8 characters"
+                    onChange={handleChange}
+                    style={{ paddingRight: '2.75rem' }}
+                  />
+                  <button 
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    style={{ position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-light)', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
                 <PasswordStrength password={formData.password} />
               </div>
 
@@ -425,14 +500,24 @@ const RegisterPage = () => {
                 <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500, fontSize: '0.875rem' }}>
                   Confirm Password
                 </label>
-                <input
-                  type="password"
-                  name="confirmPassword"
-                  required
-                  className="input-field"
-                  placeholder="Confirm password"
-                  onChange={handleChange}
-                />
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type={showConfirmPassword ? "text" : "password"}
+                    name="confirmPassword"
+                    required
+                    className="input-field"
+                    placeholder="Confirm password"
+                    onChange={handleChange}
+                    style={{ paddingRight: '2.75rem' }}
+                  />
+                  <button 
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    style={{ position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-light)', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  >
+                    {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -507,18 +592,26 @@ const RegisterPage = () => {
                     </div>
                   </div>
 
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    onClick={handleSendOtp}
-                    style={{
-                      alignSelf: 'flex-start',
-                      color: 'var(--primary)'
-                    }}
-                    disabled={isOtpLoading}
-                  >
-                    Resend OTP
-                  </Button>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem' }}>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={handleSendOtp}
+                      style={{
+                        color: 'var(--primary)',
+                        padding: 0
+                      }}
+                      disabled={isOtpLoading || resendTimer > 0}
+                    >
+                      {resendTimer > 0 ? `Resend OTP in ${resendTimer}s` : 'Resend OTP'}
+                    </Button>
+                    
+                    {expiryTimer > 0 && (
+                      <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+                        Expires in {Math.floor(expiryTimer / 60)}:{(expiryTimer % 60).toString().padStart(2, '0')}
+                      </span>
+                    )}
+                  </div>
                 </>
               )}
 

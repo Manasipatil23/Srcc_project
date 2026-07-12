@@ -1,11 +1,13 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { HeartPulse, ShieldCheck, Activity, Users, ArrowRight, ExternalLink, MapPin, Phone, Mail, CheckCircle2 } from 'lucide-react';
+import { HeartPulse, Activity, Users, ArrowRight, ExternalLink, MapPin, Phone, Mail, CheckCircle2, Sun, Moon } from 'lucide-react';
 import Button from '../components/ui/Button';
+import { useTheme } from '../context/ThemeContext';
 
 const LandingPage = () => {
   const navigate = useNavigate();
+  const { isDark, toggleTheme } = useTheme();
 
   const specialities = [
     "Critical Care & Emergency Services", "Cardiology", "Cardiac Surgery", "Orthopaedics and Spine Surgery", 
@@ -43,7 +45,7 @@ const LandingPage = () => {
       {/* Main Header */}
       <header style={{ 
         position: 'sticky', top: 0, zIndex: 50,
-        backgroundColor: 'rgba(255, 255, 255, 0.95)', backdropFilter: 'blur(10px)',
+        background: 'var(--glass-bg-panel)', backdropFilter: 'blur(10px)',
         borderBottom: '1px solid var(--border)', padding: '1rem 2rem',
         display: 'flex', justifyContent: 'space-between', alignItems: 'center'
       }}>
@@ -64,7 +66,20 @@ const LandingPage = () => {
           ))}
         </nav>
 
-        <div style={{ display: 'flex', gap: '1rem' }}>
+        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+          <button 
+            onClick={toggleTheme}
+            style={{ 
+              color: 'var(--text-secondary)', padding: '0.5rem', borderRadius: '50%', 
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              backgroundColor: 'var(--bg-main)', transition: 'all var(--transition-fast)',
+              border: 'none', cursor: 'pointer'
+            }}
+            className="hover-opacity"
+            title="Toggle Theme"
+          >
+            {isDark ? <Sun size={20} /> : <Moon size={20} />}
+          </button>
           <Button variant="outline" onClick={() => navigate('/role-selection')}>Sign In</Button>
           <Button variant="primary" onClick={() => navigate('/role-selection')}>Book Appointment</Button>
         </div>
@@ -148,7 +163,7 @@ const LandingPage = () => {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
             {therapies.map((therapy, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1.25rem', backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 'var(--radius-md)' }}>
-                <CheckCircle2 size={20} color="var(--secondary)" style={{ flexShrink: 0 }} />
+                <CheckCircle2 size={20} color="#FFFFFF" style={{ flexShrink: 0 }} />
                 <span style={{ fontWeight: 600 }}>{therapy}</span>
               </div>
             ))}
@@ -175,13 +190,13 @@ const LandingPage = () => {
 
 
       {/* Footer */}
-      <footer id="contact" style={{ backgroundColor: '#1E293B', color: '#94A3B8', padding: '5rem 2rem 2rem' }}>
+      <footer id="contact" style={{ backgroundColor: 'var(--bg-surface)', borderTop: '1px solid var(--border)', color: 'var(--text-secondary)', padding: '5rem 2rem 2rem' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '3rem', marginBottom: '3rem' }}>
           
           {/* Organization Info */}
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem', color: 'white' }}>
-              <HeartPulse size={28} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem', color: 'var(--text-primary)' }}>
+              <HeartPulse size={28} color="var(--primary)" />
               <div style={{ display: 'flex', flexDirection: 'column' }}>
                 <span style={{ fontWeight: 800, fontSize: '1.25rem', lineHeight: 1.2 }}>SRCC</span>
               </div>
@@ -191,26 +206,26 @@ const LandingPage = () => {
             </p>
             <div style={{ display: 'flex', gap: '1rem' }}>
               {/* Social placeholders */}
-              <a href="#" style={{ color: '#94A3B8' }} className="hover-opacity">Facebook</a>
-              <a href="#" style={{ color: '#94A3B8' }} className="hover-opacity">Youtube</a>
-              <a href="#" style={{ color: '#94A3B8' }} className="hover-opacity">Instagram</a>
+              <a href="#" style={{ color: 'var(--text-secondary)' }} className="hover-opacity">Facebook</a>
+              <a href="#" style={{ color: 'var(--text-secondary)' }} className="hover-opacity">Youtube</a>
+              <a href="#" style={{ color: 'var(--text-secondary)' }} className="hover-opacity">Instagram</a>
             </div>
           </div>
 
           {/* Quick Links */}
           <div>
-            <h4 style={{ color: 'white', fontSize: '1.125rem', fontWeight: 600, marginBottom: '1.5rem' }}>Quick Links</h4>
+            <h4 style={{ color: 'var(--text-primary)', fontSize: '1.125rem', fontWeight: 600, marginBottom: '1.5rem' }}>Quick Links</h4>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              <a href="#about" style={{ color: '#94A3B8', textDecoration: 'none' }} className="hover-opacity">About Us</a>
-              <a href="#services" style={{ color: '#94A3B8', textDecoration: 'none' }} className="hover-opacity">Services & Facilities</a>
-              <a href="#" style={{ color: '#94A3B8', textDecoration: 'none' }} className="hover-opacity">Words of Encouragement</a>
-              <a href="https://www.srcc.org.in/" target="_blank" rel="noopener noreferrer" style={{ color: '#94A3B8', textDecoration: 'none' }} className="hover-opacity">SRCC Children’s Hospital Website</a>
+              <a href="#about" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }} className="hover-opacity">About Us</a>
+              <a href="#services" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }} className="hover-opacity">Services & Facilities</a>
+              <a href="#" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }} className="hover-opacity">Words of Encouragement</a>
+              <a href="https://www.srcc.org.in/" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }} className="hover-opacity">SRCC Children’s Hospital Website</a>
             </div>
           </div>
 
           {/* Contact Details */}
           <div>
-            <h4 style={{ color: 'white', fontSize: '1.125rem', fontWeight: 600, marginBottom: '1.5rem' }}>Contact Us</h4>
+            <h4 style={{ color: 'var(--text-primary)', fontSize: '1.125rem', fontWeight: 600, marginBottom: '1.5rem' }}>Contact Us</h4>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
                 <MapPin size={20} style={{ color: 'var(--primary)', flexShrink: 0, marginTop: '2px' }} />
@@ -231,9 +246,9 @@ const LandingPage = () => {
         {/* Legal & Copyright */}
         <div className="footer-bottom">
           <div style={{ display: 'flex', gap: '1.5rem', fontSize: '0.875rem' }}>
-            <a href="#" style={{ color: '#94A3B8', textDecoration: 'none' }}>Disclaimer</a>
-            <a href="#" style={{ color: '#94A3B8', textDecoration: 'none' }}>Refund Policy</a>
-            <a href="#" style={{ color: '#94A3B8', textDecoration: 'none' }}>Privacy Policy</a>
+            <a href="#" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}>Disclaimer</a>
+            <a href="#" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}>Refund Policy</a>
+            <a href="#" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}>Privacy Policy</a>
           </div>
           <div style={{ fontSize: '0.875rem' }}>
             All Right Reserved © 2018 SRCC | Website by Media Fusion

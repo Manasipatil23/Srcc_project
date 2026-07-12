@@ -227,16 +227,16 @@ const SchedulePatient = () => {
                           : '1px solid var(--border)',
 
                       backgroundColor: slot.available
-                        ? '#dcfce7'
-                        : '#fee2e2',
+                        ? 'var(--success)'
+                        : 'var(--error)',
 
-                      color: slot.available
-                        ? '#166534'
-                        : '#991b1b',
+                      color: 'white',
 
                       cursor: slot.available
                         ? 'pointer'
-                        : 'not-allowed'
+                        : 'not-allowed',
+                      
+                      opacity: slot.available ? 1 : 0.8
                     }}
                   >
                     <div>{slot.time}</div>

@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import Card from '../components/ui/Card';
-import { User, Stethoscope, ArrowRight, HeartPulse, ShieldCheck } from 'lucide-react';
+import { User, Stethoscope, ArrowRight, HeartPulse, UserCog } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const RoleSelection = () => {
@@ -102,7 +102,7 @@ const RoleSelection = () => {
             className="hover-bg-main"
           >
             <div style={{ width: '80px', height: '80px', borderRadius: '50%', backgroundColor: 'rgba(20, 184, 166, 0.15)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <ShieldCheck size={40} />
+              <UserCog size={40} />
             </div>
             <div style={{ textAlign: 'center' }}>
               <h3 style={{ fontSize: '1.5rem', fontWeight: 600, marginBottom: '0.5rem' }}>SRCC Admin</h3>

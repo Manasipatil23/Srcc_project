@@ -17,6 +17,10 @@ const otpSchema = new mongoose.Schema({
     default: Date.now,
     expires: 600, // 10 minutes in seconds
   },
+  attempts: {
+    type: Number,
+    default: 0,
+  }
 });
 
 otpSchema.pre('save', async function (next) {

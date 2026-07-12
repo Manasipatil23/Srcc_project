@@ -112,30 +112,6 @@ const Dashboard = () => {
 
       </div>
 
-      {pendingFeedbackAppointment ? (
-        <FeedbackCard
-          appointment={pendingFeedbackAppointment}
-          onSubmit={handleSubmitFeedback}
-          onSkip={() => handleSkipFeedback(pendingFeedbackAppointment.id)}
-        />
-      ) : (
-        <div style={{ position: 'relative' }}>
-          <div style={{ position: 'absolute', top: '-10px', right: '10px', backgroundColor: 'var(--primary)', color: 'white', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', zIndex: 10 }}>
-            Demo Preview
-          </div>
-          <FeedbackCard
-            appointment={{
-              id: 'demo',
-              therapistName: 'Dr. Priya Sharma',
-              type: 'Clinical Psychologist',
-              date: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
-              time: '3:00 PM'
-            }}
-            onSubmit={handleSubmitFeedback}
-            onSkip={() => handleSkipFeedback('demo')}
-          />
-        </div>
-      )}
 
       {/* Stats Grid */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem' }}>
@@ -215,6 +191,18 @@ const Dashboard = () => {
           </div>
         </Card>
       </div>
+
+      {/* Pending Feedback Section (Moved to lower half) */}
+      {pendingFeedbackAppointment && (
+        <div style={{ marginTop: '1rem' }}>
+          <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1rem' }}>Recent Session Feedback</h2>
+          <FeedbackCard
+            appointment={pendingFeedbackAppointment}
+            onSubmit={handleSubmitFeedback}
+            onSkip={() => handleSkipFeedback(pendingFeedbackAppointment.id)}
+          />
+        </div>
+      )}
     </div>
   );
 };

@@ -84,9 +84,33 @@ export const updateLeaveStatus = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Invalid status' });
     }
 
+    const currentLeave = await Leave.findById(req.params.id);
+    if (!currentLeave) {
+      return res.status(404).json({ success: false, message: 'Leave request not found' });
+    }
+
+    const updateData = { status };
+
+    if (status === 'Approved') {
+      if (currentLeave.status === 'Pending Re-Approval' && currentLeave.pendingEdit?.startDate) {
+        updateData.startDate = currentLeave.pendingEdit.startDate;
+        updateData.endDate = currentLeave.pendingEdit.endDate;
+        updateData.reason = currentLeave.pendingEdit.reason;
+        updateData.$unset = { pendingEdit: 1 };
+      }
+      if (!currentLeave.approvedAt) {
+        updateData.approvedAt = new Date();
+      }
+    } else if (status === 'Rejected') {
+      if (currentLeave.status === 'Pending Re-Approval') {
+        updateData.status = 'Approved'; // Revert back to approved
+        updateData.$unset = { pendingEdit: 1 };
+      }
+    }
+
     const leave = await Leave.findByIdAndUpdate(
       req.params.id,
-      { status },
+      updateData,
       { new: true, runValidators: true }
     );
 
@@ -102,6 +126,62 @@ export const updateLeaveStatus = async (req, res, next) => {
         message: `Your leave request from ${leave.startDate} to ${leave.endDate} has been ${status.toLowerCase()} by the administrator.`,
         type: status === 'Approved' ? 'success' : 'alert'
       });
+    }
+
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('leave_updated', { therapistId: leave.therapistId });
+    }
+
+    res.json({ success: true, data: leave });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// PUT /api/leaves/:id/edit — Therapist requests an edit to a leave
+export const editLeaveRequest = async (req, res, next) => {
+  try {
+    const { startDate, endDate, reason, editReason } = req.body;
+
+    if (!startDate || !endDate || !editReason) {
+      return res.status(400).json({ success: false, message: 'Missing required fields, including edit reason' });
+    }
+
+    const leave = await Leave.findById(req.params.id);
+    if (!leave) {
+      return res.status(404).json({ success: false, message: 'Leave request not found' });
+    }
+
+    // Check 48 hour window
+    const baseDate = leave.approvedAt || leave.createdAt;
+    const hoursSince = (new Date() - new Date(baseDate)) / (1000 * 60 * 60);
+
+    if (hoursSince > 48) {
+      return res.status(403).json({ success: false, message: 'Edit window of 48 hours has expired' });
+    }
+
+    leave.status = 'Pending Re-Approval';
+    leave.pendingEdit = {
+      startDate,
+      endDate,
+      reason: reason || '',
+      editReason
+    };
+
+    await leave.save();
+
+    // Notify Admins
+    const admins = await User.find({ role: 'admin' }).select('_id');
+    if (admins.length > 0) {
+      await Notification.insertMany(
+        admins.map(admin => ({
+          targetUserId: admin._id,
+          title: 'Leave Request Edited',
+          message: `${leave.therapistName} has edited an approved leave request and is requesting re-approval.`,
+          type: 'alert'
+        }))
+      );
     }
 
     const io = req.app.get('io');

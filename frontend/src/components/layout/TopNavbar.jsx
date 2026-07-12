@@ -19,10 +19,18 @@ const TopNavbar = () => {
       setUnreadCount(0);
       return;
     }
-    notificationApi
-      .getForUser(user.id)
-      .then((list) => setUnreadCount(list.filter((n) => !n.read).length))
-      .catch(() => setUnreadCount(0));
+
+    const fetchUnread = () => {
+      notificationApi
+        .getForUser(user.id)
+        .then((list) => setUnreadCount(list.filter((n) => !n.read).length))
+        .catch(() => setUnreadCount(0));
+    };
+
+    fetchUnread();
+
+    window.addEventListener('notifications_updated', fetchUnread);
+    return () => window.removeEventListener('notifications_updated', fetchUnread);
   }, [user, location.pathname]);
 
   const handleLogout = () => {

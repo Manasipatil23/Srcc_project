@@ -40,6 +40,7 @@ const Notifications = () => {
     setNotifications(notifications.map(n => n.id === id ? { ...n, read: true } : n));
     try {
       await notificationApi.markAsRead(id);
+      window.dispatchEvent(new Event('notifications_updated'));
     } catch {
       // keep optimistic state; will resync on next load
     }
@@ -49,15 +50,21 @@ const Notifications = () => {
     setNotifications(notifications.filter(n => n.id !== id));
     try {
       await notificationApi.remove(id);
+      window.dispatchEvent(new Event('notifications_updated'));
     } catch {
       // keep optimistic state; will resync on next load
     }
   };
 
-  const markAllAsRead = () => {
+  const markAllAsRead = async () => {
     const unread = notifications.filter(n => !n.read);
     setNotifications(notifications.map(n => ({ ...n, read: true })));
-    unread.forEach(n => notificationApi.markAsRead(n.id).catch(() => {}));
+    try {
+      await Promise.all(unread.map(n => notificationApi.markAsRead(n.id)));
+      window.dispatchEvent(new Event('notifications_updated'));
+    } catch {
+      // keep optimistic state
+    }
   };
 
   return (

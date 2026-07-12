@@ -14,6 +14,7 @@ import paymentRoutes from './routes/paymentRoutes.js';
 import reportRoutes from './routes/reportRoutes.js';
 import leaveRoutes from './routes/leaveRoutes.js';
 import feedbackRoutes from './routes/feedbackRoutes.js';
+import startReminderJob from './jobs/reminderJob.js';
 import { notFound, errorHandler } from './middleware/errorHandler.js';
 
 const app = express();
@@ -62,6 +63,7 @@ const PORT = process.env.PORT || 5000;
 
 const start = async () => {
   await connectDB();
+  startReminderJob();
   httpServer.listen(PORT, () => {
     console.log(`SRCC backend running on http://localhost:${PORT}`);
   });

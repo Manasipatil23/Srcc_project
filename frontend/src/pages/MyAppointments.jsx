@@ -16,12 +16,16 @@ const MyAppointments = () => {
 
   useEffect(() => {
     if (!user) return;
+    const fetchParams = user.role === 'admin' ? {} : { userId: user.id };
     appointmentApi
-      .getAll({ userId: user.id })
+      .getAll(fetchParams)
       .then(setAppointments)
       .catch(() => setAppointments([]));
   }, [user]);
+  
   const [activeTab, setActiveTab] = useState('Upcoming');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortOrder, setSortOrder] = useState('asc'); // asc or desc
   const [selectedTherapist, setSelectedTherapist] = useState('');
   const [selectedDate, setSelectedDate] = useState('');
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
@@ -70,7 +74,22 @@ const MyAppointments = () => {
     )
       return false;
 
+    if (
+      searchQuery &&
+      !apt.patientName.toLowerCase().includes(searchQuery.toLowerCase()) &&
+      !apt.therapistName.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+      return false;
+
     return true;
+  });
+
+  // Sort logic
+  filteredAppointments.sort((a, b) => {
+    const dateA = new Date(`${a.date}T${a.time}`);
+    const dateB = new Date(`${b.date}T${b.time}`);
+    if (sortOrder === 'asc') return dateA - dateB;
+    return dateB - dateA;
   });
 
   const handleCancelClick = (apt) => {
@@ -93,6 +112,17 @@ const MyAppointments = () => {
     }
   };
 
+  const markCompleted = async (apt) => {
+    try {
+      const updated = await appointmentApi.updateStatus(apt.id, 'Completed');
+      setAppointments(appointments.map(a =>
+        a.id === updated.id ? updated : a
+      ));
+    } catch (err) {
+      alert(err.message || 'Failed to mark as completed.');
+    }
+  };
+
   const handleReschedule = (apt) => {
     navigate('/reschedule', { state: { appointment: apt } });
   };
@@ -108,7 +138,9 @@ const MyAppointments = () => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', maxWidth: '800px' }}>
       <div>
-        <h1 style={{ fontSize: '1.75rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>My Appointments</h1>
+        <h1 style={{ fontSize: '1.75rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>
+          {user?.role === 'admin' ? 'All Appointments' : 'My Appointments'}
+        </h1>
         <p style={{ color: 'var(--text-secondary)' }}>View and manage your upcoming and past sessions in timeline view.</p>
         <Card
           style={{
@@ -150,14 +182,27 @@ const MyAppointments = () => {
           flexWrap: 'wrap'
         }}
       >
-        {/* Week Filter */}
+
+        {/* Search Filter (Admins only) */}
+        {user?.role === 'admin' && (
+          <input
+            type="text"
+            className="input-field"
+            placeholder="Search Patient or Therapist..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{ width: '250px' }}
+          />
+        )}
+
         <select
           className="input-field"
+          value={sortOrder}
+          onChange={(e) => setSortOrder(e.target.value)}
           style={{ width: '200px' }}
         >
-          <option>This Week</option>
-          <option>Next Week</option>
-          <option>All Appointments</option>
+          <option value="asc">Date: Earliest First</option>
+          <option value="desc">Date: Latest First</option>
         </select>
 
         {/* Therapist Filter */}
@@ -310,6 +355,9 @@ const MyAppointments = () => {
                     <>
                       <Button variant="danger" size="sm" onClick={() => handleCancelClick(apt)}>Cancel</Button>
                       <Button variant="primary" size="sm" onClick={() => handleReschedule(apt)}>Reschedule</Button>
+                      {user?.role === 'admin' && (
+                        <Button variant="outline" size="sm" onClick={() => markCompleted(apt)} style={{ borderColor: 'var(--success)', color: 'var(--success)' }}>Mark Completed</Button>
+                      )}
                     </>
                   )}
 

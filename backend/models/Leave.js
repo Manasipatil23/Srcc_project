@@ -9,9 +9,16 @@ const leaveSchema = new mongoose.Schema(
     reason: { type: String, default: '', trim: true },
     status: {
       type: String,
-      enum: ['Pending', 'Approved', 'Rejected'],
+      enum: ['Pending', 'Approved', 'Rejected', 'Pending Re-Approval'],
       default: 'Pending',
     },
+    approvedAt: { type: Date },
+    pendingEdit: {
+      startDate: { type: String },
+      endDate: { type: String },
+      reason: { type: String },
+      editReason: { type: String },
+    }
   },
   { timestamps: true }
 );

@@ -21,16 +21,16 @@ const toUserResponse = (user) => ({
 // POST /api/auth/register
 export const register = async (req, res, next) => {
   try {
-    const { name, email, password, role, phone, dob, specialty, qualification, experience } = req.body;
+    const { name, email, password, role, phone, dob, specialty, qualification, experience, document } = req.body;
 
     if (!name || !email || !password) {
       return res.status(400).json({ success: false, message: 'Name, email and password are required' });
     }
 
-    if (role === 'therapist' && (!specialty || !qualification)) {
+    if (role === 'therapist' && (!specialty || !qualification || !document)) {
       return res.status(400).json({
         success: false,
-        message: 'Specialty and qualification are required for therapist accounts',
+        message: 'Specialty, qualification, and a verification document are required for therapist accounts',
       });
     }
 
@@ -63,9 +63,10 @@ export const register = async (req, res, next) => {
         experience: Math.max(0, Number(experience) || 0),
         phone: phone || '',
         status: createdByAdmin ? 'Approved' : 'Pending',
+        document: document || '',
       });
 
-      const admins = createdByAdmin ? [] : await User.find({ role: 'admin' }).select('_id');
+      const admins = createdByAdmin ? [] : await User.find({ role: 'admin' }).select('_id email');
       if (admins.length > 0) {
         await Notification.insertMany(
           admins.map((admin) => ({
@@ -75,6 +76,23 @@ export const register = async (req, res, next) => {
             type: 'alert',
           }))
         );
+
+        const adminEmails = admins.map(a => a.email).join(',');
+        const emailMessage = `
+          <h1>New Therapist Registration</h1>
+          <p>A new therapist, <strong>${user.name}</strong> (${specialty}), has registered and is awaiting your approval.</p>
+          <p>Please log in to the admin portal to review their documents and approve or reject the request.</p>
+          <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/login">Log in to Admin Portal</a>
+        `;
+        try {
+          await sendEmail({
+            email: adminEmails,
+            subject: 'SRCC Hospital - New Therapist Approval Required',
+            html: emailMessage,
+          });
+        } catch (err) {
+          console.error('Failed to send admin notification email', err);
+        }
       }
     }
 
@@ -170,7 +188,13 @@ export const verifyOtp = async (req, res, next) => {
 
     const isMatch = await otpRecord.matchOtp(otp);
     if (!isMatch) {
-      return res.status(400).json({ success: false, message: 'Invalid OTP' });
+      otpRecord.attempts += 1;
+      if (otpRecord.attempts >= 3) {
+        await Otp.deleteMany({ email: email.toLowerCase() });
+        return res.status(400).json({ success: false, message: 'Maximum retries exceeded. Please request a new OTP.' });
+      }
+      await otpRecord.save();
+      return res.status(400).json({ success: false, message: `Invalid OTP. You have ${3 - otpRecord.attempts} attempts remaining.` });
     }
 
     await Otp.deleteMany({ email: email.toLowerCase() });
@@ -225,6 +249,45 @@ export const login = async (req, res, next) => {
   }
 };
 
+// POST /api/auth/verify-login-otp
+export const verifyLoginOtp = async (req, res, next) => {
+  try {
+    const { email, otp } = req.body;
+    if (!email || !otp) {
+      return res.status(400).json({ success: false, message: 'Email and OTP are required' });
+    }
+
+    const otpRecord = await Otp.findOne({ email: email.toLowerCase() }).sort({ createdAt: -1 });
+    
+    if (!otpRecord) {
+      return res.status(400).json({ success: false, message: 'Invalid or expired OTP' });
+    }
+
+    const isMatch = await otpRecord.matchOtp(otp);
+    if (!isMatch) {
+      otpRecord.attempts += 1;
+      if (otpRecord.attempts >= 3) {
+        await Otp.deleteMany({ email: email.toLowerCase() });
+        return res.status(400).json({ success: false, message: 'Maximum retries exceeded. Please request a new OTP.' });
+      }
+      await otpRecord.save();
+      return res.status(400).json({ success: false, message: `Invalid OTP. You have ${3 - otpRecord.attempts} attempts remaining.` });
+    }
+
+    await Otp.deleteMany({ email: email.toLowerCase() });
+    
+    const user = await User.findOne({ email: email.toLowerCase() });
+    
+    res.json({
+      success: true,
+      token: generateToken(user._id),
+      user: toUserResponse(user),
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // GET /api/auth/profile (protected)
 export const getProfile = async (req, res, next) => {
   try {
@@ -260,36 +323,6 @@ export const updateProfile = async (req, res, next) => {
   }
 };
 
-// GET /api/auth/verify/:token
-export const verifyEmail = async (req, res, next) => {
-  try {
-    const verificationToken = crypto
-      .createHash('sha256')
-      .update(req.params.token)
-      .digest('hex');
-
-    const user = await User.findOne({
-      verificationToken
-    });
-
-    if (!user) {
-      return res.status(400).json({ success: false, message: 'Invalid verification token' });
-    }
-
-    user.isVerified = true;
-    user.verificationToken = undefined;
-    await user.save({ validateBeforeSave: false });
-
-    res.json({
-      success: true,
-      token: generateToken(user._id),
-      user: toUserResponse(user),
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
 // POST /api/auth/forgot-password
 export const forgotPassword = async (req, res, next) => {
   try {
@@ -299,64 +332,81 @@ export const forgotPassword = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'There is no user with that email' });
     }
 
-    const resetToken = user.getResetPasswordToken();
-    await user.save({ validateBeforeSave: false });
+    await Otp.deleteMany({ email: user.email.toLowerCase() });
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
 
-    const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password/${resetToken}`;
+    await Otp.create({
+      email: user.email.toLowerCase(),
+      otp: otpCode,
+    });
 
     const message = `
-      <h1>You have requested a password reset</h1>
-      <p>Please make a PUT request to: \n\n <a href=${resetUrl} clicktracking=off>${resetUrl}</a></p>
+      <h1>Password Reset</h1>
+      <p>Your OTP to reset your password is: <strong>${otpCode}</strong></p>
+      <p>This OTP is valid for 10 minutes.</p>
     `;
 
     try {
       await sendEmail({
         email: user.email,
-        subject: 'Password Reset Token',
+        subject: 'Password Reset OTP',
         html: message,
       });
 
-      res.status(200).json({ success: true, message: 'Email sent' });
+      res.status(200).json({ success: true, message: 'OTP sent successfully' });
     } catch (err) {
       console.error(err);
-      
-      console.log(`\n======= DEVELOPMENT RESET LINK =======`);
-      console.log(`${resetUrl}`);
-      console.log(`======================================\n`);
-      
-      return res.status(200).json({ success: true, message: 'Reset link logged to server console (SMTP failed)' });
+      console.log(`\n========== DEVELOPMENT OTP ==========`);
+      console.log(`Reset OTP for ${user.email}: ${otpCode}`);
+      console.log(`=====================================\n`);
+      return res.status(200).json({ success: true, message: 'OTP logged to server console (SMTP failed)' });
     }
   } catch (error) {
     next(error);
   }
 };
 
-// PUT /api/auth/reset-password/:token
-export const resetPassword = async (req, res, next) => {
+// PUT /api/auth/reset-password-with-otp
+export const resetPasswordWithOtp = async (req, res, next) => {
   try {
-    const resetPasswordToken = crypto
-      .createHash('sha256')
-      .update(req.params.token)
-      .digest('hex');
-
-    const user = await User.findOne({
-      resetPasswordToken,
-      resetPasswordExpire: { $gt: Date.now() },
-    });
-
-    if (!user) {
-      return res.status(400).json({ success: false, message: 'Invalid or expired token' });
+    const { email, otp, newPassword } = req.body;
+    
+    if (!email || !otp || !newPassword) {
+      return res.status(400).json({ success: false, message: 'Email, OTP, and new password are required' });
     }
 
-    user.password = req.body.password;
-    user.resetPasswordToken = undefined;
-    user.resetPasswordExpire = undefined;
+    const otpRecord = await Otp.findOne({ email: email.toLowerCase() }).sort({ createdAt: -1 });
+    
+    if (!otpRecord) {
+      return res.status(400).json({ success: false, message: 'Invalid or expired OTP' });
+    }
+
+    const isMatch = await otpRecord.matchOtp(otp);
+    if (!isMatch) {
+      otpRecord.attempts += 1;
+      if (otpRecord.attempts >= 3) {
+        await Otp.deleteMany({ email: email.toLowerCase() });
+        return res.status(400).json({ success: false, message: 'Maximum retries exceeded. Please request a new OTP.' });
+      }
+      await otpRecord.save();
+      return res.status(400).json({ success: false, message: `Invalid OTP. You have ${3 - otpRecord.attempts} attempts remaining.` });
+    }
+
+    await Otp.deleteMany({ email: email.toLowerCase() });
+
+    const user = await User.findOne({ email: email.toLowerCase() });
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    
+    user.password = newPassword;
     await user.save();
 
     res.status(200).json({
       success: true,
       token: generateToken(user._id),
       user: toUserResponse(user),
+      message: 'Password reset successfully'
     });
   } catch (error) {
     next(error);
@@ -379,7 +429,13 @@ export const updateEmail = async (req, res, next) => {
 
     const isMatch = await otpRecord.matchOtp(otp);
     if (!isMatch) {
-      return res.status(400).json({ success: false, message: 'Invalid OTP' });
+      otpRecord.attempts += 1;
+      if (otpRecord.attempts >= 3) {
+        await Otp.deleteMany({ email: email.toLowerCase() });
+        return res.status(400).json({ success: false, message: 'Maximum retries exceeded. Please request a new OTP.' });
+      }
+      await otpRecord.save();
+      return res.status(400).json({ success: false, message: `Invalid OTP. You have ${3 - otpRecord.attempts} attempts remaining.` });
     }
 
     const existing = await User.findOne({ email: email.toLowerCase() });

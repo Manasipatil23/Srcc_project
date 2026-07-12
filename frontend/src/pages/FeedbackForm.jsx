@@ -30,11 +30,58 @@ const FeedbackForm = () => {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
 
-  if (!appointment) {
+  const [appointments, setAppointments] = useState([]);
+  const [feedbacks, setFeedbacks] = useState([]);
+  const [isFetchingData, setIsFetchingData] = useState(!appointment);
+
+  React.useEffect(() => {
+    if (appointment || !user) {
+      setIsFetchingData(false);
+      return;
+    }
+    Promise.all([
+      import('../services/api').then(({ appointmentApi }) => appointmentApi.getAll({ userId: user.id })),
+      feedbackApi.getAll()
+    ]).then(([apts, fbs]) => {
+      setAppointments(apts);
+      setFeedbacks(fbs.filter(f => f.patientId === user.id));
+    }).catch(() => {
+    }).finally(() => {
+      setIsFetchingData(false);
+    });
+  }, [appointment, user]);
+
+  const pendingAppointment = React.useMemo(() => {
+    if (appointment) return appointment;
+    return appointments
+      .filter(a => a.status === 'Completed' && !feedbacks.some(f => f.appointmentId === a.id))
+      .sort((a, b) => b.date.localeCompare(a.date))[0];
+  }, [appointment, appointments, feedbacks]);
+
+  React.useEffect(() => {
+    if (pendingAppointment && !formData.appointmentId) {
+      setFormData(prev => ({
+        ...prev,
+        appointmentId: pendingAppointment.id,
+        therapistId: pendingAppointment.therapistId,
+        therapistName: pendingAppointment.therapistName,
+      }));
+    }
+  }, [pendingAppointment, formData.appointmentId]);
+
+  if (isFetchingData) {
     return (
       <div style={{ maxWidth: '800px', margin: '0 auto', textAlign: 'center', padding: '3rem' }}>
-        <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1rem' }}>No Appointment Selected</h2>
-        <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>Please select an appointment from your dashboard to provide feedback.</p>
+        <p style={{ color: 'var(--text-secondary)' }}>Loading your appointments...</p>
+      </div>
+    );
+  }
+
+  if (!pendingAppointment) {
+    return (
+      <div style={{ maxWidth: '800px', margin: '0 auto', textAlign: 'center', padding: '3rem' }}>
+        <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1rem' }}>No Feedback Required</h2>
+        <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>You do not have any completed appointments that require feedback.</p>
         <button onClick={() => navigate('/appointments')} style={{ padding: '0.5rem 1rem', background: 'var(--primary)', color: 'white', borderRadius: '0.5rem', border: 'none', cursor: 'pointer' }}>Back to Appointments</button>
       </div>
     );
@@ -122,14 +169,14 @@ const FeedbackForm = () => {
                     fontWeight: '600', fontSize: '16px',
                     letterSpacing: '0.5px'
                   }}>
-                    {getInitials(appointment.therapistName)}
+                    {getInitials(pendingAppointment.therapistName)}
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                     <h2 style={{ fontSize: '20px', fontWeight: '600', color: '#111827', margin: '0 0 4px 0', letterSpacing: '-0.3px' }}>
-                      {appointment.therapistName}
+                      {pendingAppointment.therapistName}
                     </h2>
                     <p style={{ color: '#6b7280', fontSize: '14.5px', margin: 0 }}>
-                      Clinical Psychologist • {appointment.date} • {appointment.time}
+                      Session • {pendingAppointment.date} • {pendingAppointment.time}
                     </p>
                   </div>
                 </div>

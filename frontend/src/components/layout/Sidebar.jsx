@@ -4,7 +4,7 @@ import { Home, Calendar, LayoutDashboard, Users, Clock, Bell, LogOut, AlarmClock
 import { useAuth } from '../../context/AuthContext';
 
 const Sidebar = () => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const isAdmin = user?.role === 'admin';
   const isTherapist = user?.role === 'therapist';
 
@@ -61,7 +61,7 @@ const Sidebar = () => {
         </h1>
       </div>
 
-      <nav style={{ flex: 1, padding: '1.5rem 1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+      <nav style={{ flex: 1, padding: '1.5rem 1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', overflowY: 'auto' }} className="no-scrollbar">
         {navItems.map((item) => (
           <NavLink
             key={item.name}
@@ -85,7 +85,8 @@ const Sidebar = () => {
       </nav>
 
       <div style={{ padding: '1.5rem 1rem', borderTop: '1px solid var(--border)' }}>
-        <NavLink to="/" style={{
+        <button onClick={logout} style={{
+          width: '100%',
           display: 'flex',
           alignItems: 'center',
           gap: '1rem',
@@ -93,12 +94,17 @@ const Sidebar = () => {
           borderRadius: 'var(--radius-md)',
           color: 'var(--error)',
           fontWeight: 500,
-          transition: 'all var(--transition-fast)'
-        }}>
+          transition: 'all var(--transition-fast)',
+          backgroundColor: 'transparent',
+          border: 'none',
+          cursor: 'pointer'
+        }}
+        className="hover-bg-main">
           <LogOut size={20} />
           Logout
-        </NavLink>
+        </button>
       </div>
+
     </aside>
   );
 };

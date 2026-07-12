@@ -65,15 +65,12 @@ const TherapistDashboard = () => {
 
   return (
     <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
           <h1 style={{ fontSize: '1.75rem', fontWeight: 'bold', marginBottom: '0.25rem' }}>
             Therapist Dashboard
           </h1>
           <p style={{ color: 'var(--text-secondary)' }}>Welcome back, {user?.name}! Here's your schedule overview for today.</p>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-           <Avatar name={user?.name || ''} src={user?.image} size={48} style={{ border: '2px solid var(--primary)' }} />
         </div>
       </div>
 

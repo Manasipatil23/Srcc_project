@@ -115,9 +115,6 @@ const DynamicCalendar = ({ title, description, appointments = [], leaves = [] })
           <h1 style={{ fontSize: '1.75rem', fontWeight: 'bold', marginBottom: '0.25rem' }}>{title}</h1>
           <p style={{ color: 'var(--text-secondary)' }}>{description}</p>
         </div>
-        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-          <Button variant="outline"><Filter size={18} style={{ marginRight: '0.5rem' }}/> Filter</Button>
-        </div>
       </div>
 
       <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-start' }}>

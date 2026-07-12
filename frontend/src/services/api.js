@@ -34,8 +34,10 @@ export const authApi = {
   verifyEmail: (token) => request(`/auth/verify/${token}`),
   forgotPassword: (payload) => request('/auth/forgot-password', { method: 'POST', body: JSON.stringify(payload) }),
   resetPassword: (token, payload) => request(`/auth/reset-password/${token}`, { method: 'PUT', body: JSON.stringify(payload) }),
+  resetPasswordWithOtp: (payload) => request('/auth/reset-password-with-otp', { method: 'PUT', body: JSON.stringify(payload) }),
   sendOtp: (payload) => request('/auth/send-otp', { method: 'POST', body: JSON.stringify(payload) }),
   verifyOtp: (payload) => request('/auth/verify-otp', { method: 'POST', body: JSON.stringify(payload) }),
+  verifyLoginOtp: (payload) => request('/auth/verify-login-otp', { method: 'POST', body: JSON.stringify(payload) }),
   updateEmail: (payload) => request('/auth/profile/email', { method: 'PUT', body: JSON.stringify(payload) }),
   updatePassword: (payload) => request('/auth/profile/password', { method: 'PUT', body: JSON.stringify(payload) }),
 };
@@ -166,6 +168,7 @@ export const leaveApi = {
   getForTherapist: (therapistId) => request(`/leaves/therapist/${therapistId}`).then((r) => r.data),
   create: (payload) => request('/leaves', { method: 'POST', body: JSON.stringify(payload) }).then((r) => r.data),
   updateStatus: (id, status) => request(`/leaves/${id}/status`, { method: 'PUT', body: JSON.stringify({ status }) }).then((r) => r.data),
+  edit: (id, payload) => request(`/leaves/${id}/edit`, { method: 'PUT', body: JSON.stringify(payload) }).then((r) => r.data),
 };
 
 // ---------- Feedback ----------

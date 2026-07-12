@@ -12,6 +12,11 @@ const AdminDashboard = () => {
 
   const [leaveRequests, setLeaveRequests] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // Real stats state
+  const [totalTherapists, setTotalTherapists] = useState(0);
+  const [appointmentsToday, setAppointmentsToday] = useState(0);
+  const [activePatients, setActivePatients] = useState(0);
 
   const fetchLeaves = () => {
     leaveApi.getAll()
@@ -28,6 +33,19 @@ const AdminDashboard = () => {
     };
 
     socket.on('leave_updated', handleUpdate);
+    
+    // Fetch stats
+    import('../services/api').then(({ therapistApi, appointmentApi, patientApi }) => {
+      therapistApi.getAll().then(data => setTotalTherapists(data.length)).catch(() => {});
+      
+      appointmentApi.getAll({}).then(data => {
+        const today = new Date().toISOString().split('T')[0];
+        setAppointmentsToday(data.filter(apt => apt.date === today).length);
+      }).catch(() => {});
+
+      patientApi.getAll().then(data => setActivePatients(data.length)).catch(() => {});
+    });
+
     return () => {
       socket.off('leave_updated', handleUpdate);
     };
@@ -43,9 +61,9 @@ const AdminDashboard = () => {
   };
 
   const stats = [
-    { title: "Total Therapists", value: "42", icon: <Users size={24} />, color: "var(--primary)", bgColor: "var(--secondary)" },
-    { title: "Appointments Today", value: "156", icon: <Calendar size={24} />, color: "var(--accent)", bgColor: "rgba(20, 184, 166, 0.15)" },
-    { title: "Active Patients", value: "892", icon: <Activity size={24} />, color: "var(--success)", bgColor: "var(--success-bg)" }
+    { title: "Total Therapists", value: totalTherapists.toString(), icon: <Users size={24} />, color: "var(--primary)", bgColor: "var(--secondary)" },
+    { title: "Appointments Today", value: appointmentsToday.toString(), icon: <Calendar size={24} />, color: "var(--accent)", bgColor: "rgba(20, 184, 166, 0.15)" },
+    { title: "Active Patients", value: activePatients.toString(), icon: <Activity size={24} />, color: "var(--success)", bgColor: "var(--success-bg)" }
   ];
 
   return (

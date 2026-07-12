@@ -4,7 +4,7 @@ import Button from '../components/ui/Button';
 import { useAuth } from '../context/AuthContext';
 import { patientApi, authApi } from '../services/api';
 import Avatar, { pickProfilePhoto } from '../components/ui/Avatar';
-import { User, Mail, Phone, Calendar, Activity, FileText, Download, Upload, Shield, Camera, Eye, X } from 'lucide-react';
+import { User, Mail, Phone, Calendar, Activity, FileText, Download, Upload, Lock, Camera, Eye, EyeOff, X } from 'lucide-react';
 
 const EMPTY_PROFILE = {
   id: '',
@@ -41,6 +41,9 @@ const ProfilePage = () => {
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [passwordForm, setPasswordForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
   const [isPasswordUpdating, setIsPasswordUpdating] = useState(false);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -302,7 +305,7 @@ const ProfilePage = () => {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                 <div style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundColor: 'var(--bg-main)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)' }}>
-                  <Shield size={18} />
+                  <Lock size={18} />
                 </div>
                 <div>
                   <p style={{ fontWeight: 500 }}>Password</p>
@@ -373,9 +376,6 @@ const ProfilePage = () => {
                     <Button variant="ghost" size="sm" style={{ padding: '0.5rem' }} title="Preview Document" onClick={() => setPreviewDoc(doc)}>
                       <Eye size={18} color="var(--primary)" />
                     </Button>
-                    <Button variant="ghost" size="sm" style={{ padding: '0.5rem' }} title="Verify Document">
-                      <Shield size={18} color="var(--success)" />
-                    </Button>
                     {doc.dataUrl ? (
                       <a href={doc.dataUrl} download={doc.name} style={{ display: 'inline-flex', alignItems: 'center' }}>
                         <Button variant="outline" size="sm" style={{ padding: '0.5rem' }} title="Download" type="button">
@@ -408,7 +408,11 @@ const ProfilePage = () => {
               </div>
               <div>
                 <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem' }}>Date of Birth</label>
-                <input type="date" className="input-field" value={editFormData.dob} onChange={e => setEditFormData({...editFormData, dob: e.target.value})} />
+                <input type="date" className="input-field" value={editFormData.dob} max={new Date().toISOString().split('T')[0]} onChange={e => {
+                  const newDob = e.target.value;
+                  const newAge = newDob ? Math.floor((new Date() - new Date(newDob)) / 31557600000) : editFormData.age;
+                  setEditFormData({...editFormData, dob: newDob, age: Math.max(0, newAge)});
+                }} />
               </div>
               <div>
                 <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem' }}>Gender</label>
@@ -603,33 +607,63 @@ const ProfilePage = () => {
             <form onSubmit={handleUpdatePassword} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem' }}>Current Password</label>
-                <input 
-                  type="password" 
-                  className="input-field" 
-                  value={passwordForm.currentPassword} 
-                  onChange={e => setPasswordForm({...passwordForm, currentPassword: e.target.value})} 
-                  required
-                />
+                <div style={{ position: 'relative' }}>
+                  <input 
+                    type={showCurrentPassword ? "text" : "password"} 
+                    className="input-field" 
+                    value={passwordForm.currentPassword} 
+                    onChange={e => setPasswordForm({...passwordForm, currentPassword: e.target.value})} 
+                    required
+                    style={{ paddingRight: '2.75rem' }}
+                  />
+                  <button 
+                    type="button"
+                    onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                    style={{ position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-light)', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  >
+                    {showCurrentPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
               </div>
               <div>
                 <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem' }}>New Password</label>
-                <input 
-                  type="password" 
-                  className="input-field" 
-                  value={passwordForm.newPassword} 
-                  onChange={e => setPasswordForm({...passwordForm, newPassword: e.target.value})} 
-                  required
-                />
+                <div style={{ position: 'relative' }}>
+                  <input 
+                    type={showNewPassword ? "text" : "password"} 
+                    className="input-field" 
+                    value={passwordForm.newPassword} 
+                    onChange={e => setPasswordForm({...passwordForm, newPassword: e.target.value})} 
+                    required
+                    style={{ paddingRight: '2.75rem' }}
+                  />
+                  <button 
+                    type="button"
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                    style={{ position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-light)', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  >
+                    {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
               </div>
               <div>
                 <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem' }}>Confirm New Password</label>
-                <input 
-                  type="password" 
-                  className="input-field" 
-                  value={passwordForm.confirmPassword} 
-                  onChange={e => setPasswordForm({...passwordForm, confirmPassword: e.target.value})} 
-                  required
-                />
+                <div style={{ position: 'relative' }}>
+                  <input 
+                    type={showConfirmPassword ? "text" : "password"} 
+                    className="input-field" 
+                    value={passwordForm.confirmPassword} 
+                    onChange={e => setPasswordForm({...passwordForm, confirmPassword: e.target.value})} 
+                    required
+                    style={{ paddingRight: '2.75rem' }}
+                  />
+                  <button 
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    style={{ position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-light)', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  >
+                    {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
               </div>
               <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
                 <Button variant="outline" onClick={() => setIsPasswordModalOpen(false)} style={{ flex: 1 }} type="button">Cancel</Button>

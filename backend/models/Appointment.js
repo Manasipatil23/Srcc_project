@@ -18,6 +18,8 @@ const appointmentSchema = new mongoose.Schema(
       default: 'Upcoming',
     },
     type: { type: String, required: true, trim: true },
+    reminder24hSent: { type: Boolean, default: false },
+    reminder1hSent: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

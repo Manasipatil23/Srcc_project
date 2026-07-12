@@ -26,6 +26,8 @@ const therapistSchema = new mongoose.Schema(
     patientsCount: { type: Number, default: 0, min: 0 },
     rating: { type: Number, default: 5.0, min: 0, max: 5 },
     image: { type: String, default: '' },
+    document: { type: String, default: '' }, // Base64 string of required document (license/degree)
+    rejectionReason: { type: String, default: '' },
   },
   { timestamps: true }
 );
