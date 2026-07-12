@@ -1,11 +1,14 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from './context/AuthContext';
 import Layout from './components/layout/Layout';
 import LandingPage from './pages/LandingPage';
 import RoleSelection from './pages/RoleSelection';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
+import VerifyEmailPage from './pages/VerifyEmailPage';
 import Dashboard from './pages/Dashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import AppointmentBooking from './pages/AppointmentBooking';
@@ -24,9 +27,7 @@ import FeedbackHistory from './pages/FeedbackHistory';
 import TherapistDashboard from './pages/therapist/TherapistDashboard';
 import TherapistCalendar from './pages/therapist/TherapistCalendar';
 import TherapistAppointments from './pages/therapist/TherapistAppointments';
-import TherapistAvailability from './pages/therapist/TherapistAvailability';
 import TherapistLeave from './pages/therapist/TherapistLeave';
-import TherapistSettings from './pages/therapist/TherapistSettings';
 import AdminLeaves from './pages/AdminLeaves';
 import AccountsPage from './pages/AccountsPage';
 import ReportsPage from './pages/ReportsPage';
@@ -41,6 +42,9 @@ function App() {
           <Route path="/role-selection" element={<RoleSelection />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
+          <Route path="/verify-email/:token" element={<VerifyEmailPage />} />
 
           <Route element={<Layout />}>
             <Route path="/dashboard" element={<Dashboard />} />
@@ -67,9 +71,8 @@ function App() {
             <Route path="/therapist/dashboard" element={<TherapistDashboard />} />
             <Route path="/therapist/calendar" element={<TherapistCalendar />} />
             <Route path="/therapist/appointments" element={<TherapistAppointments />} />
-            <Route path="/therapist/availability" element={<TherapistAvailability />} />
             <Route path="/therapist/leave" element={<TherapistLeave />} />
-            <Route path="/therapist/settings" element={<TherapistSettings />} />
+            <Route path="/therapist/settings" element={<Navigate to="/profile" replace />} />
             <Route path="/therapist/notifications" element={<Notifications />} />
           </Route>
         </Routes>

@@ -31,6 +31,13 @@ export const authApi = {
     request('/auth/profile', { method: 'PUT', body: JSON.stringify(payload) }),
   saveToken: (token) => localStorage.setItem('srcc_token', token),
   clearToken: () => localStorage.removeItem('srcc_token'),
+  verifyEmail: (token) => request(`/auth/verify/${token}`),
+  forgotPassword: (payload) => request('/auth/forgot-password', { method: 'POST', body: JSON.stringify(payload) }),
+  resetPassword: (token, payload) => request(`/auth/reset-password/${token}`, { method: 'PUT', body: JSON.stringify(payload) }),
+  sendOtp: (payload) => request('/auth/send-otp', { method: 'POST', body: JSON.stringify(payload) }),
+  verifyOtp: (payload) => request('/auth/verify-otp', { method: 'POST', body: JSON.stringify(payload) }),
+  updateEmail: (payload) => request('/auth/profile/email', { method: 'PUT', body: JSON.stringify(payload) }),
+  updatePassword: (payload) => request('/auth/profile/password', { method: 'PUT', body: JSON.stringify(payload) }),
 };
 
 // ---------- Therapists ----------
@@ -85,9 +92,9 @@ export const appointmentApi = {
 export const notificationApi = {
   getAll: () => request('/notifications').then((r) => r.data),
   getForUser: (userId) => request(`/notifications/${userId}`).then((r) => r.data),
-  markAsRead: (id) =>
-    request(`/notifications/${id}/read`, { method: 'PUT' }).then((r) => r.data),
+  markAsRead: (id) => request(`/notifications/${id}/read`, { method: 'PUT' }).then((r) => r.data),
   remove: (id) => request(`/notifications/${id}`, { method: 'DELETE' }),
+  sendReminders: (payload) => request('/notifications/remind', { method: 'POST', body: JSON.stringify(payload) }).then((r) => r.data),
 };
 
 // ---------- Schedules ----------
@@ -101,6 +108,7 @@ export const scheduleApi = {
 
 // ---------- Patients ----------
 export const patientApi = {
+  getAll: () => request('/patients').then((r) => r.data),
   getDefault: () => request('/patients/default').then((r) => r.data),
   getById: (id) => request(`/patients/${id}`).then((r) => r.data),
   update: (id, payload) =>
@@ -158,4 +166,11 @@ export const leaveApi = {
   getForTherapist: (therapistId) => request(`/leaves/therapist/${therapistId}`).then((r) => r.data),
   create: (payload) => request('/leaves', { method: 'POST', body: JSON.stringify(payload) }).then((r) => r.data),
   updateStatus: (id, status) => request(`/leaves/${id}/status`, { method: 'PUT', body: JSON.stringify({ status }) }).then((r) => r.data),
+};
+
+// ---------- Feedback ----------
+export const feedbackApi = {
+  getAll: () => request('/feedback').then((r) => r.data),
+  getForTherapist: (therapistId) => request(`/feedback/therapist/${therapistId}`).then((r) => r.data),
+  submit: (payload) => request('/feedback', { method: 'POST', body: JSON.stringify(payload) }).then((r) => r.data),
 };

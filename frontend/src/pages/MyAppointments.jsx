@@ -5,7 +5,7 @@ import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Modal from '../components/ui/Modal';
 import { useAuth } from '../context/AuthContext';
-import { appointmentApi } from '../services/api';
+import { appointmentApi, feedbackApi } from '../services/api';
 import { Calendar, Clock, User, AlertCircle, MapPin } from 'lucide-react';
 
 const MyAppointments = () => {
@@ -28,10 +28,15 @@ const MyAppointments = () => {
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [cancelReason, setCancelReason] = useState('');
 
-  const [feedbacks] = useState(() => {
-    const savedFeedbacks = localStorage.getItem('patientFeedbacks');
-    return savedFeedbacks ? JSON.parse(savedFeedbacks) : [];
-  });
+  const [feedbacks, setFeedbacks] = useState([]);
+
+  useEffect(() => {
+    if (!user) return;
+    feedbackApi
+      .getAll()
+      .then(setFeedbacks)
+      .catch(() => setFeedbacks([]));
+  }, [user]);
 
   const filteredAppointments = appointments.filter((apt) => {
 

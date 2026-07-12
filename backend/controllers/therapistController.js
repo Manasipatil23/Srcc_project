@@ -2,6 +2,7 @@ import Therapist from '../models/Therapist.js';
 import Schedule from '../models/Schedule.js';
 import User from '../models/User.js';
 import Notification from '../models/Notification.js';
+import sendEmail from '../utils/sendEmail.js';
 
 // GET /api/therapists
 export const getTherapists = async (req, res, next) => {
@@ -99,6 +100,23 @@ export const updateStatus = async (req, res, next) => {
           : 'Your therapist registration was reviewed and not approved. Please contact the SRCC administrator for more details.',
       type: status === 'Approved' ? 'success' : 'alert',
     });
+
+    if (status === 'Approved') {
+      const emailMessage = `
+        <h1>Your account has been approved</h1>
+        <p>You can now sign in to access your therapist dashboard at SRCC Hospital.</p>
+        <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/login">Sign In Now</a>
+      `;
+      try {
+        await sendEmail({
+          email: therapist.email,
+          subject: 'SRCC Hospital - Account Approved',
+          html: emailMessage,
+        });
+      } catch (err) {
+        console.error('Failed to send approval email', err);
+      }
+    }
 
     res.json({ success: true, data: therapist });
   } catch (error) {

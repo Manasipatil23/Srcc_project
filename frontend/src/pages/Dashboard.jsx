@@ -1,30 +1,38 @@
 import React, { useState, useEffect } from 'react';
 import Card from '../components/ui/Card';
-import { Users, Calendar, Clock, XCircle, TrendingUp } from 'lucide-react';
+import FeedbackCard from '../components/FeedbackCard';
+import { Users, Calendar, Clock, XCircle, Star, Sparkles, MessageSquare, Heart, Send } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { appointmentApi, therapistApi, scheduleApi } from '../services/api';
+import { appointmentApi, therapistApi, scheduleApi, feedbackApi } from '../services/api';
 import { socket } from '../services/socket';
 
 const Dashboard = () => {
   const { user } = useAuth();
   const [appointments, setAppointments] = useState([]);
+  const [feedbacks, setFeedbacks] = useState([]);
   const [therapistCount, setTherapistCount] = useState(0);
   const [slotStats, setSlotStats] = useState({ available: 0, total: 0 });
 
-  const fetchAppointments = () => {
+  const fetchAppointmentsAndFeedbacks = () => {
     if (!user) return;
-    appointmentApi
-      .getAll({ userId: user.id })
-      .then(setAppointments)
-      .catch(() => setAppointments([]));
+    Promise.all([
+      appointmentApi.getAll({ userId: user.id }),
+      feedbackApi.getAll()
+    ]).then(([apts, fbs]) => {
+      setAppointments(apts);
+      setFeedbacks(fbs.filter(f => f.patientId === user.id));
+    }).catch(() => {
+      setAppointments([]);
+      setFeedbacks([]);
+    });
   };
 
   useEffect(() => {
     if (!user) return;
-    fetchAppointments();
+    fetchAppointmentsAndFeedbacks();
 
     const handleAppointmentUpdate = () => {
-      fetchAppointments();
+      fetchAppointmentsAndFeedbacks();
     };
 
     socket.on('appointment_updated', handleAppointmentUpdate);
@@ -57,6 +65,43 @@ const Dashboard = () => {
     { label: 'Cancelled', value: `${cancelledCount}`, total: Math.max(appointments.length, 1), icon: <XCircle size={24} />, color: 'var(--error)', bg: 'var(--error-bg)' },
   ];
 
+  const [skippedFeedbacks, setSkippedFeedbacks] = useState(new Set());
+
+  // Find the most recent completed appointment that hasn't been reviewed or skipped
+  const pendingFeedbackAppointment = appointments
+    .filter(a => a.status === 'Completed' && !feedbacks.some(f => f.appointmentId === a.id) && !skippedFeedbacks.has(a.id))
+    // Fallback to simple sorting if date parsing fails
+    .sort((a, b) => b.date.localeCompare(a.date))[0];
+
+  const handleSkipFeedback = (aptId) => {
+    if (aptId === 'demo') return;
+    setSkippedFeedbacks(prev => {
+      const newSet = new Set(prev);
+      newSet.add(aptId);
+      return newSet;
+    });
+  };
+
+  const handleSubmitFeedback = async (feedbackData) => {
+    if (pendingFeedbackAppointment?.id === 'demo' || !pendingFeedbackAppointment) {
+      alert("Demo feedback submitted successfully! (This is a preview)");
+      return;
+    }
+    try {
+      await feedbackApi.submit({
+        appointmentId: pendingFeedbackAppointment.id,
+        therapistId: pendingFeedbackAppointment.therapistId,
+        patientId: user.id,
+        overallRating: feedbackData.rating,
+        tags: feedbackData.tags,
+        comments: feedbackData.comments,
+      });
+      fetchAppointmentsAndFeedbacks();
+    } catch (err) {
+      console.error('Failed to submit feedback', err);
+    }
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
@@ -66,6 +111,31 @@ const Dashboard = () => {
         </div>
 
       </div>
+
+      {pendingFeedbackAppointment ? (
+        <FeedbackCard
+          appointment={pendingFeedbackAppointment}
+          onSubmit={handleSubmitFeedback}
+          onSkip={() => handleSkipFeedback(pendingFeedbackAppointment.id)}
+        />
+      ) : (
+        <div style={{ position: 'relative' }}>
+          <div style={{ position: 'absolute', top: '-10px', right: '10px', backgroundColor: 'var(--primary)', color: 'white', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', zIndex: 10 }}>
+            Demo Preview
+          </div>
+          <FeedbackCard
+            appointment={{
+              id: 'demo',
+              therapistName: 'Dr. Priya Sharma',
+              type: 'Clinical Psychologist',
+              date: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
+              time: '3:00 PM'
+            }}
+            onSubmit={handleSubmitFeedback}
+            onSkip={() => handleSkipFeedback('demo')}
+          />
+        </div>
+      )}
 
       {/* Stats Grid */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem' }}>

@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
-import { ArrowLeft, Eye, EyeOff, ShieldCheck, HeartPulse, Stethoscope } from 'lucide-react';
+import { ArrowLeft, Eye, EyeOff, ShieldCheck, HeartPulse, Stethoscope, Mail, Lock } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const LoginPage = () => {
@@ -91,39 +91,50 @@ const LoginPage = () => {
             
             <div>
               <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500, fontSize: '0.875rem' }}>Email Address</label>
-              <input 
-                type="email" 
-                className="input-field" 
-                placeholder={isAdmin ? "admin@srcc.org.in" : isTherapist ? "therapist@srcc.org.in" : "Enter your email"} 
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
+              <div style={{ position: 'relative' }}>
+                <Mail size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-light)', pointerEvents: 'none' }} />
+                <input 
+                  type="email" 
+                  className="input-field" 
+                  placeholder={isAdmin ? "admin@srcc.org.in" : isTherapist ? "therapist@srcc.org.in" : "Enter your email"} 
+                  style={{ paddingLeft: '2.75rem', height: '3rem', transition: 'all 0.2s ease', backgroundColor: 'var(--bg-main)' }}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  onFocus={(e) => e.target.style.boxShadow = `0 0 0 2px ${isAdmin ? 'var(--accent)' : isTherapist ? '#8b5cf6' : 'var(--primary)'}40`}
+                  onBlur={(e) => e.target.style.boxShadow = 'none'}
+                />
+              </div>
             </div>
             
-            <div style={{ position: 'relative' }}>
+            <div>
               <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500, fontSize: '0.875rem' }}>Password</label>
-              <input 
-                type={showPassword ? "text" : "password"} 
-                className="input-field" 
-                placeholder="Enter your password" 
-                style={{ paddingRight: '2.5rem' }}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-              <button 
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                style={{ position: 'absolute', right: '0.75rem', top: '2.1rem', color: 'var(--text-light)', background: 'none', border: 'none', cursor: 'pointer' }}
-              >
-                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
+              <div style={{ position: 'relative' }}>
+                <Lock size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-light)', pointerEvents: 'none' }} />
+                <input 
+                  type={showPassword ? "text" : "password"} 
+                  className="input-field" 
+                  placeholder="Enter your password" 
+                  style={{ paddingLeft: '2.75rem', paddingRight: '2.75rem', height: '3rem', transition: 'all 0.2s ease', backgroundColor: 'var(--bg-main)' }}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  onFocus={(e) => e.target.style.boxShadow = `0 0 0 2px ${isAdmin ? 'var(--accent)' : isTherapist ? '#8b5cf6' : 'var(--primary)'}40`}
+                  onBlur={(e) => e.target.style.boxShadow = 'none'}
+                />
+                <button 
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  style={{ position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-light)', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.875rem' }}>
               <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
                 <input type="checkbox" /> Remember me
               </label>
-              <a href="#" style={{ color: 'var(--primary)', fontWeight: 500 }}>Forgot password?</a>
+              <Link to="/forgot-password" style={{ color: 'var(--primary)', fontWeight: 500 }}>Forgot password?</Link>
             </div>
 
             <Button type="submit" variant="primary" size="lg" className="w-full mt-4" disabled={isLoading} style={{ backgroundColor: isAdmin ? 'var(--accent)' : isTherapist ? '#8b5cf6' : 'var(--primary)', borderColor: 'transparent' }}>

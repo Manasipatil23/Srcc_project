@@ -1,5 +1,7 @@
 import mongoose from 'mongoose';
 import Notification from '../models/Notification.js';
+import User from '../models/User.js';
+import sendEmailUtility from '../utils/sendEmail.js';
 
 const relativeTime = (date) => {
   const seconds = Math.floor((Date.now() - new Date(date).getTime()) / 1000);
@@ -81,6 +83,72 @@ export const markAsRead = async (req, res, next) => {
     }
 
     res.json({ success: true, data: toClientNotification(notification) });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// POST /api/notifications/remind
+export const sendReminders = async (req, res, next) => {
+  try {
+    const { patientIds, message, sendEmail, sendInApp } = req.body;
+
+    if (!patientIds || !Array.isArray(patientIds) || patientIds.length === 0) {
+      return res.status(400).json({ success: false, message: 'Please select at least one patient' });
+    }
+
+    if (!message) {
+      return res.status(400).json({ success: false, message: 'Message is required' });
+    }
+
+    const users = await User.find({ _id: { $in: patientIds }, role: 'patient' });
+    const results = [];
+
+    for (const user of users) {
+      let emailSuccess = false;
+      let inAppSuccess = false;
+
+      if (sendEmail) {
+        try {
+          const emailSent = await sendEmailUtility({
+            email: user.email,
+            subject: 'SRCC Hospital - Appointment Reminder',
+            html: `<p>Hello ${user.name},</p><p>${message}</p>`,
+          });
+          emailSuccess = emailSent;
+        } catch (err) {
+          console.error(`Failed to send email to ${user.email}`, err);
+        }
+      }
+
+      if (sendInApp) {
+        try {
+          await Notification.create({
+            targetUserId: user._id,
+            title: 'Appointment Reminder',
+            message: message,
+            type: 'info',
+          });
+          inAppSuccess = true;
+        } catch (err) {
+          console.error(`Failed to create notification for ${user._id}`, err);
+        }
+      }
+
+      results.push({
+        userId: user._id,
+        name: user.name,
+        emailSuccess,
+        inAppSuccess
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Reminders processed successfully',
+      data: results
+    });
+
   } catch (error) {
     next(error);
   }

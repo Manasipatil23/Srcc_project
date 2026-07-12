@@ -74,7 +74,6 @@ const TherapistDashboard = () => {
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
            <Avatar name={user?.name || ''} src={user?.image} size={48} style={{ border: '2px solid var(--primary)' }} />
-           <Button variant="outline" onClick={() => navigate('/therapist/availability')}>Update Availability</Button>
         </div>
       </div>
 
@@ -132,9 +131,6 @@ const TherapistDashboard = () => {
         <Card className="glass-panel" style={{ padding: '1.5rem' }}>
           <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1.5rem' }}>Quick Actions</h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <Button variant="outline" className="w-full" onClick={() => navigate('/therapist/availability')} style={{ justifyContent: 'flex-start', padding: '1rem' }}>
-              <Clock size={18} style={{ marginRight: '1rem' }} /> Add Break Slot
-            </Button>
             <Button variant="outline" className="w-full" onClick={() => navigate('/therapist/appointments')} style={{ justifyContent: 'flex-start', padding: '1rem' }}>
               <Users size={18} style={{ marginRight: '1rem' }} /> Search Patient
             </Button>

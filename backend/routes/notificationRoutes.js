@@ -4,11 +4,13 @@ import {
   getUserNotifications,
   markAsRead,
   deleteNotification,
+  sendReminders
 } from '../controllers/notificationController.js';
 
 const router = express.Router();
 
 router.get('/', getAllNotifications);
+router.post('/remind', sendReminders);
 router.put('/:id/read', markAsRead);
 router.delete('/:id', deleteNotification);
 router.get('/:userId', getUserNotifications);

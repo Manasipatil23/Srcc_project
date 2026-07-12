@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import Patient from '../models/Patient.js';
+import User from '../models/User.js';
 
 // GET /api/patients/default — the primary seeded patient profile
 export const getDefaultPatient = async (req, res, next) => {
@@ -9,6 +10,16 @@ export const getDefaultPatient = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'No patient profile found' });
     }
     res.json({ success: true, data: patient });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// GET /api/patients - all patients
+export const getAllPatients = async (req, res, next) => {
+  try {
+    const users = await User.find({ role: 'patient' }).select('-password -__v');
+    res.json({ success: true, count: users.length, data: users });
   } catch (error) {
     next(error);
   }

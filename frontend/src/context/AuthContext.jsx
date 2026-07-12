@@ -32,7 +32,7 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (payload) => {
     const res = await authApi.register(payload);
-    return res.user;
+    return res;
   };
 
   const logout = () => {

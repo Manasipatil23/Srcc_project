@@ -5,6 +5,45 @@ import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import { ArrowLeft, ShieldCheck, HeartPulse, Stethoscope, CheckCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { authApi } from '../services/api';
+
+const PasswordStrength = ({ password }) => {
+  let score = 0;
+  if (!password) return null;
+
+  if (password.length >= 8) score++;
+  if (/[A-Z]/.test(password)) score++;
+  if (/[a-z]/.test(password)) score++;
+  if (/[0-9]/.test(password)) score++;
+  if (/[^A-Za-z0-9]/.test(password)) score++;
+
+  let strength = 'Weak';
+  let color = 'var(--error)';
+  
+  if (score >= 4) {
+    strength = 'Strong';
+    color = 'var(--success)';
+  } else if (score >= 2) {
+    strength = 'Medium';
+    color = 'var(--warning)';
+  }
+
+  return (
+    <div style={{ marginTop: '0.5rem', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+      <div style={{ display: 'flex', gap: '4px', flex: 1 }}>
+        {[1, 2, 3, 4, 5].map(level => (
+          <div key={level} style={{
+            height: '6px',
+            flex: 1,
+            borderRadius: '3px',
+            backgroundColor: level <= score ? color : 'var(--border)'
+          }}></div>
+        ))}
+      </div>
+      <span style={{ color, fontWeight: 500, minWidth: '50px', textAlign: 'right' }}>{strength}</span>
+    </div>
+  );
+};
 
 const RegisterPage = () => {
   const navigate = useNavigate();
@@ -26,10 +65,10 @@ const RegisterPage = () => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const [generatedOtp, setGeneratedOtp] = useState('');
   const [enteredOtp, setEnteredOtp] = useState('');
   const [isOtpSent, setIsOtpSent] = useState(false);
-  const [isPhoneVerified, setIsPhoneVerified] = useState(false);
+  const [isEmailVerified, setIsEmailVerified] = useState(false);
+  const [isOtpLoading, setIsOtpLoading] = useState(false);
 
   const isAdmin = selectedRole === 'admin';
   const isTherapist = selectedRole === 'therapist';
@@ -39,37 +78,40 @@ const RegisterPage = () => {
 
     setFormData({ ...formData, [name]: value });
 
-    if (name === 'phone') {
+    if (name === 'email') {
       setIsOtpSent(false);
-      setIsPhoneVerified(false);
-      setGeneratedOtp('');
+      setIsEmailVerified(false);
       setEnteredOtp('');
     }
   };
 
-  const handleSendOtp = () => {
+  const handleSendOtp = async () => {
     setError('');
 
-    if (!formData.phone.trim()) {
-      setError('Please enter your phone number first.');
+    if (!formData.email.trim()) {
+      setError('Please enter your email address first.');
       return;
     }
 
-    if (formData.phone.replace(/\D/g, '').length < 10) {
-      setError('Please enter a valid phone number.');
+    if (!/^\S+@\S+\.\S+$/.test(formData.email)) {
+      setError('Please enter a valid email address.');
       return;
     }
 
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-
-    setGeneratedOtp(otp);
-    setIsOtpSent(true);
-    setIsPhoneVerified(false);
-
-    alert(`OTP sent successfully!\n\nTesting OTP: ${otp}`);
+    setIsOtpLoading(true);
+    try {
+      await authApi.sendOtp({ email: formData.email });
+      setIsOtpSent(true);
+      setIsEmailVerified(false);
+      alert('OTP sent successfully to your email address!');
+    } catch (err) {
+      setError(err.message || 'Failed to send OTP.');
+    } finally {
+      setIsOtpLoading(false);
+    }
   };
 
-  const handleVerifyOtp = () => {
+  const handleVerifyOtp = async () => {
     setError('');
 
     if (!enteredOtp.trim()) {
@@ -77,11 +119,15 @@ const RegisterPage = () => {
       return;
     }
 
-    if (enteredOtp === generatedOtp) {
-      setIsPhoneVerified(true);
+    setIsOtpLoading(true);
+    try {
+      await authApi.verifyOtp({ email: formData.email, otp: enteredOtp });
+      setIsEmailVerified(true);
       setError('');
-    } else {
-      setError('Invalid OTP. Please try again.');
+    } catch (err) {
+      setError(err.message || 'Invalid OTP. Please try again.');
+    } finally {
+      setIsOtpLoading(false);
     }
   };
 
@@ -89,8 +135,23 @@ const RegisterPage = () => {
     e.preventDefault();
     setError('');
 
-    if (!isPhoneVerified) {
-      setError('Please verify your phone number before creating an account.');
+    if (!isEmailVerified) {
+      setError('Please verify your email address before creating an account.');
+      return;
+    }
+
+    if (!/^[a-zA-Z\s]+$/.test(formData.name)) {
+      setError('Name should only contain letters and spaces.');
+      return;
+    }
+
+    if (!/^\S+@\S+\.\S+$/.test(formData.email)) {
+      setError('Please enter a valid email address.');
+      return;
+    }
+
+    if (!/^\d{10}$/.test(formData.phone.replace(/\D/g, ''))) {
+      setError('Phone number must be exactly 10 digits.');
       return;
     }
 
@@ -99,14 +160,15 @@ const RegisterPage = () => {
       return;
     }
 
-    if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters long.');
+    const pass = formData.password;
+    if (pass.length < 8 || !/[A-Z]/.test(pass) || !/[a-z]/.test(pass) || !/[0-9]/.test(pass) || !/[^A-Za-z0-9]/.test(pass)) {
+      setError('Password must be at least 8 characters long, include an uppercase letter, lowercase letter, number, and a special character.');
       return;
     }
 
     setIsLoading(true);
     try {
-      await register({
+      const res = await register({
         name: formData.name,
         email: formData.email,
         password: formData.password,
@@ -119,9 +181,7 @@ const RegisterPage = () => {
           experience: formData.experience,
         }),
       });
-      if (isTherapist) {
-        alert('Registration submitted!\n\nYour account is pending verification by the SRCC admin. You will be able to sign in once it is approved.');
-      }
+      alert(res.message || 'Registration successful!');
       navigate('/login');
     } catch (err) {
       setError(err.message || 'Registration failed. Please try again.');
@@ -261,6 +321,7 @@ const RegisterPage = () => {
                   className="input-field"
                   placeholder="john@example.com"
                   onChange={handleChange}
+                  disabled={isEmailVerified}
                 />
               </div>
 
@@ -276,7 +337,6 @@ const RegisterPage = () => {
                   placeholder="+91 9876543210"
                   value={formData.phone}
                   onChange={handleChange}
-                  disabled={isPhoneVerified}
                 />
               </div>
             </div>
@@ -355,9 +415,10 @@ const RegisterPage = () => {
                   name="password"
                   required
                   className="input-field"
-                  placeholder="Minimum 6 characters"
+                  placeholder="Minimum 8 characters"
                   onChange={handleChange}
                 />
+                <PasswordStrength password={formData.password} />
               </div>
 
               <div>
@@ -390,28 +451,29 @@ const RegisterPage = () => {
                   fontWeight: 600,
                   marginBottom: '0.25rem'
                 }}>
-                  Phone Verification
+                  Email Verification
                 </h3>
 
                 <p style={{
                   color: 'var(--text-secondary)',
                   fontSize: '0.875rem'
                 }}>
-                  Verify your phone number before creating your account.
+                  Verify your email address before creating your account.
                 </p>
               </div>
 
-              {!isOtpSent && !isPhoneVerified && (
+              {!isOtpSent && !isEmailVerified && (
                 <Button
                   type="button"
                   variant="outline"
                   onClick={handleSendOtp}
+                  disabled={isOtpLoading}
                 >
-                  Send OTP
+                  {isOtpLoading ? 'Sending...' : 'Send OTP'}
                 </Button>
               )}
 
-              {isOtpSent && !isPhoneVerified && (
+              {isOtpSent && !isEmailVerified && (
                 <>
                   <div>
                     <label style={{
@@ -438,8 +500,9 @@ const RegisterPage = () => {
                         variant="primary"
                         onClick={handleVerifyOtp}
                         style={{ whiteSpace: 'nowrap' }}
+                        disabled={isOtpLoading}
                       >
-                        Verify OTP
+                        {isOtpLoading ? 'Verifying...' : 'Verify OTP'}
                       </Button>
                     </div>
                   </div>
@@ -452,13 +515,14 @@ const RegisterPage = () => {
                       alignSelf: 'flex-start',
                       color: 'var(--primary)'
                     }}
+                    disabled={isOtpLoading}
                   >
                     Resend OTP
                   </Button>
                 </>
               )}
 
-              {isPhoneVerified && (
+              {isEmailVerified && (
                 <div style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -471,7 +535,7 @@ const RegisterPage = () => {
                   fontWeight: 500
                 }}>
                   <CheckCircle size={18} />
-                  Phone number verified successfully
+                  Email verified successfully
                 </div>
               )}
             </div>
@@ -481,7 +545,7 @@ const RegisterPage = () => {
               variant={isAdmin ? 'secondary' : 'primary'}
               size="lg"
               className="w-full mt-4"
-              disabled={isLoading || !isPhoneVerified}
+              disabled={isLoading || !isEmailVerified}
             >
               {isLoading ? 'Registering...' : 'Create Account'}
             </Button>

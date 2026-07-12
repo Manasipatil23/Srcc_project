@@ -1,324 +1,281 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import Card from '../components/ui/Card';
-import Button from '../components/ui/Button';
-import { Star, ArrowLeft, Calendar, Clock, User } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { feedbackApi } from '../services/api';
+import { Star, Calendar, Clock, Sparkles, Send, CheckCircle } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
-const QuestionBlock = ({ label, children }) => (
-  <div>
-    <label style={{
-      display: 'block',
-      marginBottom: '0.75rem',
-      fontWeight: 600,
-      color: 'var(--text-primary)'
-    }}>
-      {label}
-    </label>
-    {children}
-  </div>
-);
+const feedbackTags = [
+  { id: 'helpful', label: 'Very helpful', icon: Sparkles },
+  { id: 'communication', label: 'Good communication', icon: Clock },
+  { id: 'comfortable', label: 'Felt comfortable', icon: Calendar },
+];
 
 const FeedbackForm = () => {
+  const { user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const appointment = location.state?.appointment;
 
-  const savedFeedbacks = JSON.parse(localStorage.getItem('patientFeedbacks')) || [];
-  const existingFeedback = savedFeedbacks.find(
-    fb => fb.appointmentId === appointment?.id
-  );
-
-  const [formData, setFormData] = useState(existingFeedback || {
+  const [formData, setFormData] = useState({
     appointmentId: appointment?.id,
     therapistId: appointment?.therapistId,
     therapistName: appointment?.therapistName,
-    date: appointment?.date,
-    time: appointment?.time,
-    type: appointment?.type,
     overallRating: 0,
-    feltHeard: '',
-    goalsCovered: '',
-    therapistStyle: '',
-    sessionFeel: '',
-    helpfulPart: '',
-    uncomfortablePart: '',
-    nextFocus: '',
-    additionalComments: ''
+    tags: [],
+    comments: '',
   });
+
+  const [isLoading, setIsLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [error, setError] = useState('');
 
   if (!appointment) {
     return (
-      <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-        <Card>
-          <p style={{ color: 'var(--text-secondary)' }}>
-            No appointment selected for feedback.
-          </p>
-          <Button
-            variant="primary"
-            style={{ marginTop: '1rem' }}
-            onClick={() => navigate('/appointments')}
-          >
-            Back to Appointments
-          </Button>
-        </Card>
+      <div style={{ maxWidth: '800px', margin: '0 auto', textAlign: 'center', padding: '3rem' }}>
+        <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1rem' }}>No Appointment Selected</h2>
+        <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>Please select an appointment from your dashboard to provide feedback.</p>
+        <button onClick={() => navigate('/appointments')} style={{ padding: '0.5rem 1rem', background: 'var(--primary)', color: 'white', borderRadius: '0.5rem', border: 'none', cursor: 'pointer' }}>Back to Appointments</button>
       </div>
     );
   }
 
-  const updateField = (field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+  const handleTagToggle = (tagLabel) => {
+    setFormData(prev => {
+      if (prev.tags.includes(tagLabel)) {
+        return { ...prev, tags: prev.tags.filter(t => t !== tagLabel) };
+      }
+      return { ...prev, tags: [...prev.tags, tagLabel] };
+    });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
 
-    const updatedFeedback = {
-      ...formData,
-      id: existingFeedback?.id || `f${Date.now()}`,
-      submittedAt: new Date().toISOString()
-    };
+    if (formData.overallRating === 0) {
+      setError('Please provide an overall rating.');
+      return;
+    }
 
-    const updatedFeedbacks = existingFeedback
-      ? savedFeedbacks.map(fb =>
-          fb.appointmentId === appointment.id ? updatedFeedback : fb
-        )
-      : [...savedFeedbacks, updatedFeedback];
+    setIsLoading(true);
 
-    localStorage.setItem('patientFeedbacks', JSON.stringify(updatedFeedbacks));
-    navigate('/appointments');
+    try {
+      await feedbackApi.submit({
+        appointmentId: formData.appointmentId,
+        therapistId: formData.therapistId,
+        patientId: user?.id,
+        overallRating: formData.overallRating,
+        tags: formData.tags,
+        comments: formData.comments,
+        responses: {}
+      });
+      setSuccess(true);
+      setTimeout(() => navigate('/appointments'), 2000);
+    } catch (err) {
+      setError(err.message || 'Failed to submit feedback.');
+      setIsLoading(false);
+    }
   };
 
-  const optionButtonStyle = (active) => ({
-    padding: '0.65rem 1rem',
-    borderRadius: 'var(--radius-md)',
-    border: active ? '2px solid var(--primary)' : '1px solid var(--border)',
-    backgroundColor: active ? 'var(--secondary)' : 'var(--bg-surface)',
-    color: active ? 'var(--primary)' : 'var(--text-primary)',
-    cursor: 'pointer',
-    fontWeight: active ? 600 : 500,
-    transition: 'all var(--transition-fast)'
-  });
+  const getInitials = (name) => {
+    if (!name) return 'DR';
+    // If name starts with "Dr. " remove it to get the initials of the actual name
+    const cleanName = name.replace(/^Dr\.\s*/i, '');
+    const parts = cleanName.split(' ');
+    if (parts.length >= 2) {
+      return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+    }
+    return cleanName.substring(0, 2).toUpperCase();
+  };
 
   return (
-    <div style={{
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '2rem',
-      maxWidth: '850px',
-      margin: '0 auto'
-    }}>
-      <div>
-        <Button
-          variant="ghost"
-          onClick={() => navigate('/appointments')}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-            marginBottom: '1rem',
-            color: 'var(--text-secondary)'
-          }}
-        >
-          <ArrowLeft size={18} /> Back to Appointments
-        </Button>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '3rem 1rem', fontFamily: 'Inter, sans-serif' }}>
+      <AnimatePresence mode="wait">
+        {success ? (
+          <motion.div key="success" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} style={{ textAlign: 'center', padding: '4rem 2rem', backgroundColor: '#fff', borderRadius: '1rem', border: '1px solid #e2e8f0', width: '100%', maxWidth: '650px' }}>
+            <div className="pulse-success" style={{ width: '80px', height: '80px', borderRadius: '50%', backgroundColor: 'var(--success-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem' }}>
+              <CheckCircle size={40} color="var(--success)" />
+            </div>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>Thank You!</h2>
+            <p style={{ color: 'var(--text-secondary)' }}>Your feedback has been submitted successfully.</p>
+          </motion.div>
+        ) : (
+          <motion.div key="form" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} style={{ width: '100%', maxWidth: '650px' }}>
+            <div style={{ 
+              backgroundColor: 'white', 
+              borderRadius: '20px', 
+              border: '1px solid #e5e7eb', 
+              padding: '32px',
+              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.02)'
+            }}>
+              
+              {/* Header */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '28px' }}>
+                <div style={{ display: 'flex', gap: '16px' }}>
+                  <div style={{ 
+                    width: '64px', height: '64px', 
+                    backgroundColor: '#e6f0ff',
+                    color: '#3b82f6',
+                    borderRadius: '16px',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontWeight: '600', fontSize: '16px',
+                    letterSpacing: '0.5px'
+                  }}>
+                    {getInitials(appointment.therapistName)}
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                    <h2 style={{ fontSize: '20px', fontWeight: '600', color: '#111827', margin: '0 0 4px 0', letterSpacing: '-0.3px' }}>
+                      {appointment.therapistName}
+                    </h2>
+                    <p style={{ color: '#6b7280', fontSize: '14.5px', margin: 0 }}>
+                      Clinical Psychologist • {appointment.date} • {appointment.time}
+                    </p>
+                  </div>
+                </div>
+                <div style={{ 
+                  backgroundColor: '#d1fae5', color: '#059669', 
+                  padding: '6px 14px', borderRadius: '20px', 
+                  fontSize: '13px', fontWeight: '500' 
+                }}>
+                  Completed
+                </div>
+              </div>
 
-        <h1 style={{
-          fontSize: '1.75rem',
-          fontWeight: 'bold',
-          marginBottom: '0.5rem'
-        }}>
-          Session Feedback
-        </h1>
+              <div style={{ height: '1px', backgroundColor: '#f3f4f6', margin: '0 0 28px 0' }} />
 
-        <p style={{ color: 'var(--text-secondary)' }}>
-          Share your experience so we can understand what helped and improve future sessions.
-        </p>
-      </div>
+              <form onSubmit={handleSubmit}>
+                {/* Rating */}
+                <div style={{ marginBottom: '28px' }}>
+                  <h3 style={{ fontSize: '17px', fontWeight: '500', color: '#111827', marginBottom: '16px' }}>How was your session?</h3>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    {[1, 2, 3, 4, 5].map(star => (
+                      <button
+                        key={star}
+                        type="button"
+                        onClick={() => setFormData({...formData, overallRating: star})}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0', transition: 'transform 0.1s' }}
+                        onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
+                        onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                      >
+                        <Star 
+                          size={28} 
+                          fill={star <= formData.overallRating ? '#f59e0b' : 'transparent'} 
+                          color={star <= formData.overallRating ? '#f59e0b' : '#d1d5db'} 
+                          strokeWidth={1.5}
+                        />
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
-      <Card style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
-        <div style={{
-          padding: '1rem',
-          backgroundColor: 'var(--bg-main)',
-          borderRadius: 'var(--radius-md)',
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-          gap: '1rem'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <User size={18} color="var(--primary)" />
-            <span style={{ fontWeight: 600 }}>{appointment.therapistName}</span>
-          </div>
+                {/* Quick Feedback Tags */}
+                <div style={{ marginBottom: '28px' }}>
+                  <h3 style={{ fontSize: '17px', fontWeight: '500', color: '#111827', marginBottom: '16px' }}>Quick feedback</h3>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
+                    {feedbackTags.map(({ id, label, icon: Icon }) => {
+                      const isSelected = formData.tags.includes(label);
+                      return (
+                        <button
+                          key={id}
+                          type="button"
+                          onClick={() => handleTagToggle(label)}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: '8px',
+                            padding: '10px 20px',
+                            borderRadius: '30px',
+                            border: `1px solid ${isSelected ? '#f59e0b' : '#fcd34d'}`,
+                            backgroundColor: isSelected ? '#fffbeb' : '#fffbeb',
+                            color: '#b45309',
+                            cursor: 'pointer',
+                            fontSize: '14.5px',
+                            fontWeight: '400',
+                            transition: 'all 0.2s',
+                            boxShadow: isSelected ? '0 0 0 1px #f59e0b' : 'none'
+                          }}
+                        >
+                          <Icon size={16} strokeWidth={1.5} />
+                          {label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)' }}>
-            <Calendar size={18} />
-            <span>{appointment.date}</span>
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)' }}>
-            <Clock size={18} />
-            <span>{appointment.time}</span>
-          </div>
-        </div>
-
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
-          <QuestionBlock label="Overall, how would you rate today’s session?">
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
-              {[1, 2, 3, 4, 5].map(star => (
-                <button
-                  key={star}
-                  type="button"
-                  onClick={() => updateField('overallRating', star)}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    cursor: 'pointer',
-                    padding: 0
-                  }}
-                >
-                  <Star
-                    size={32}
-                    fill={star <= formData.overallRating ? '#facc15' : 'transparent'}
-                    color={star <= formData.overallRating ? '#facc15' : '#cbd5e1'}
+                {/* Experience Textarea */}
+                <div style={{ marginBottom: '32px' }}>
+                  <h3 style={{ fontSize: '17px', fontWeight: '500', color: '#111827', marginBottom: '16px' }}>Share your experience (optional)</h3>
+                  <textarea
+                    rows="4"
+                    value={formData.comments}
+                    onChange={(e) => setFormData({...formData, comments: e.target.value})}
+                    placeholder="The therapist was patient and explained everything clearly."
+                    style={{ 
+                      width: '100%', 
+                      padding: '16px', 
+                      borderRadius: '12px', 
+                      border: '1px solid #e5e7eb', 
+                      fontSize: '15px',
+                      color: '#4b5563',
+                      resize: 'vertical',
+                      outline: 'none',
+                      fontFamily: 'inherit',
+                      boxShadow: '0 1px 2px 0 rgba(0,0,0,0.01)'
+                    }}
+                    onFocus={(e) => e.target.style.borderColor = '#9ca3af'}
+                    onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
                   />
-                </button>
-              ))}
+                </div>
+
+                {error && (
+                  <div style={{ padding: '12px', backgroundColor: '#fef2f2', color: '#ef4444', borderRadius: '8px', fontSize: '14px', marginBottom: '24px' }}>
+                    {error}
+                  </div>
+                )}
+
+                <div style={{ height: '1px', backgroundColor: '#f3f4f6', margin: '0 0 24px 0' }} />
+
+                {/* Footer */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <p style={{ color: '#6b7280', fontSize: '14.5px', margin: 0 }}>Your feedback helps improve future sessions.</p>
+                  
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
+                    <button 
+                      type="button"
+                      onClick={() => navigate('/appointments')}
+                      style={{ 
+                        background: 'none', border: 'none', color: '#111827', 
+                        fontWeight: '500', fontSize: '15px', cursor: 'pointer',
+                        padding: 0
+                      }}
+                    >
+                      Skip
+                    </button>
+                    
+                    <button 
+                      type="submit"
+                      disabled={isLoading}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: '8px',
+                        backgroundColor: '#111827', color: 'white',
+                        padding: '12px 24px', borderRadius: '30px',
+                        fontWeight: '500', fontSize: '15px',
+                        border: 'none', cursor: isLoading ? 'not-allowed' : 'pointer',
+                        opacity: isLoading ? 0.8 : 1,
+                        transition: 'opacity 0.2s'
+                      }}
+                    >
+                      <Send size={16} strokeWidth={2} style={{ transform: 'rotate(45deg)', marginTop: '-2px' }} />
+                      {isLoading ? 'Submitting...' : 'Submit Feedback'}
+                    </button>
+                  </div>
+                </div>
+
+              </form>
             </div>
-          </QuestionBlock>
-
-          <QuestionBlock label="Did you feel heard, understood, and respected by your therapist today?">
-            <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-              {['Yes', 'Somewhat', 'No'].map(option => (
-                <button
-                  key={option}
-                  type="button"
-                  onClick={() => updateField('feltHeard', option)}
-                  style={optionButtonStyle(formData.feltHeard === option)}
-                >
-                  {option}
-                </button>
-              ))}
-            </div>
-          </QuestionBlock>
-
-          <QuestionBlock label="Did we talk about and work on what you wanted to work on today?">
-            <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-              {['Yes', 'Somewhat', 'No'].map(option => (
-                <button
-                  key={option}
-                  type="button"
-                  onClick={() => updateField('goalsCovered', option)}
-                  style={optionButtonStyle(formData.goalsCovered === option)}
-                >
-                  {option}
-                </button>
-              ))}
-            </div>
-          </QuestionBlock>
-
-          <QuestionBlock label="Does the therapist’s style and the way we work make sense and feel right to you?">
-            <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-              {['Yes', 'Somewhat', 'No'].map(option => (
-                <button
-                  key={option}
-                  type="button"
-                  onClick={() => updateField('therapistStyle', option)}
-                  style={optionButtonStyle(formData.therapistStyle === option)}
-                >
-                  {option}
-                </button>
-              ))}
-            </div>
-          </QuestionBlock>
-
-          <QuestionBlock label="Overall, how did today’s session feel for you?">
-            <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-              {['Very helpful', 'Good', 'Okay', 'Difficult', 'Not helpful'].map(option => (
-                <button
-                  key={option}
-                  type="button"
-                  onClick={() => updateField('sessionFeel', option)}
-                  style={optionButtonStyle(formData.sessionFeel === option)}
-                >
-                  {option}
-                </button>
-              ))}
-            </div>
-          </QuestionBlock>
-
-          <QuestionBlock label="What was the most helpful part of today’s session?">
-            <textarea
-              rows={3}
-              className="input-field"
-              value={formData.helpfulPart}
-              onChange={(e) => updateField('helpfulPart', e.target.value)}
-              placeholder="Write what helped you the most..."
-            />
-          </QuestionBlock>
-
-          <QuestionBlock label="Was there anything said or done today that felt uncomfortable, confusing, or unhelpful?">
-            <textarea
-              rows={3}
-              className="input-field"
-              value={formData.uncomfortablePart}
-              onChange={(e) => updateField('uncomfortablePart', e.target.value)}
-              placeholder="Share anything that did not feel right, if any..."
-            />
-          </QuestionBlock>
-
-          <QuestionBlock label="Is there anything specific you would like to focus on or change for our next session?">
-            <textarea
-              rows={3}
-              className="input-field"
-              value={formData.nextFocus}
-              onChange={(e) => updateField('nextFocus', e.target.value)}
-              placeholder="Mention topics, goals, or changes for the next session..."
-            />
-          </QuestionBlock>
-
-          <QuestionBlock label="Any additional comments or improvement suggestions?">
-            <textarea
-              rows={4}
-              className="input-field"
-              value={formData.additionalComments}
-              onChange={(e) => updateField('additionalComments', e.target.value)}
-              placeholder="Add any other feedback or suggestions..."
-            />
-          </QuestionBlock>
-
-          <div style={{
-            display: 'flex',
-            justifyContent: 'flex-end',
-            gap: '1rem',
-            paddingTop: '1rem',
-            borderTop: '1px solid var(--border)'
-          }}>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => navigate('/appointments')}
-            >
-              Cancel
-            </Button>
-
-            <Button
-              type="submit"
-              variant="primary"
-              disabled={
-                !formData.overallRating ||
-                !formData.feltHeard ||
-                !formData.goalsCovered ||
-                !formData.therapistStyle ||
-                !formData.sessionFeel
-              }
-            >
-              {existingFeedback ? 'Update Feedback' : 'Submit Feedback'}
-            </Button>
-          </div>
-        </form>
-      </Card>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

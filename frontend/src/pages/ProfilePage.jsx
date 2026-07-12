@@ -32,6 +32,16 @@ const ProfilePage = () => {
 
   const [previewDoc, setPreviewDoc] = useState(null);
 
+  // Security States
+  const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
+  const [emailForm, setEmailForm] = useState({ newEmail: '', otp: '' });
+  const [isOtpSent, setIsOtpSent] = useState(false);
+  const [isEmailUpdating, setIsEmailUpdating] = useState(false);
+
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+  const [passwordForm, setPasswordForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
+  const [isPasswordUpdating, setIsPasswordUpdating] = useState(false);
+
   useEffect(() => {
     if (!user) return;
     patientApi
@@ -136,6 +146,59 @@ const ProfilePage = () => {
     }
   };
 
+  const handleSendEmailOtp = async () => {
+    if (!emailForm.newEmail) return alert('Please enter a new email address');
+    setIsEmailUpdating(true);
+    try {
+      await authApi.sendOtp({ email: emailForm.newEmail });
+      setIsOtpSent(true);
+      alert('OTP sent to your new email address');
+    } catch (err) {
+      alert(err.message || 'Failed to send OTP');
+    } finally {
+      setIsEmailUpdating(false);
+    }
+  };
+
+  const handleUpdateEmail = async (e) => {
+    e.preventDefault();
+    if (!emailForm.newEmail || !emailForm.otp) return alert('Please fill all fields');
+    setIsEmailUpdating(true);
+    try {
+      const res = await authApi.updateEmail({ email: emailForm.newEmail, otp: emailForm.otp });
+      updateUser({ email: res.user.email });
+      setIsEmailModalOpen(false);
+      setEmailForm({ newEmail: '', otp: '' });
+      setIsOtpSent(false);
+      alert('Email updated successfully');
+    } catch (err) {
+      alert(err.message || 'Failed to update email');
+    } finally {
+      setIsEmailUpdating(false);
+    }
+  };
+
+  const handleUpdatePassword = async (e) => {
+    e.preventDefault();
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      return alert('New passwords do not match');
+    }
+    setIsPasswordUpdating(true);
+    try {
+      await authApi.updatePassword({ 
+        currentPassword: passwordForm.currentPassword, 
+        newPassword: passwordForm.newPassword 
+      });
+      setIsPasswordModalOpen(false);
+      setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      alert('Password updated successfully');
+    } catch (err) {
+      alert(err.message || 'Failed to update password');
+    } finally {
+      setIsPasswordUpdating(false);
+    }
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', maxWidth: '1000px', margin: '0 auto' }}>
       <div>
@@ -219,6 +282,34 @@ const ProfilePage = () => {
             </div>
             
             <Button variant="outline" className="w-full mt-4" onClick={openEditDetails}>Edit Contact Info</Button>
+          </Card>
+
+          <Card style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            <h3 style={{ fontSize: '1.125rem', fontWeight: 600, borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem' }}>Account Security</h3>
+            
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <div style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundColor: 'var(--bg-main)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)' }}>
+                  <Mail size={18} />
+                </div>
+                <div>
+                  <p style={{ fontWeight: 500 }}>Email Address</p>
+                </div>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => setIsEmailModalOpen(true)}>Update</Button>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <div style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundColor: 'var(--bg-main)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)' }}>
+                  <Shield size={18} />
+                </div>
+                <div>
+                  <p style={{ fontWeight: 500 }}>Password</p>
+                </div>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => setIsPasswordModalOpen(true)}>Change</Button>
+            </div>
           </Card>
         </div>
 
@@ -457,6 +548,97 @@ const ProfilePage = () => {
               )}
             </div>
           </div>
+        </div>
+      )}
+      {/* Email Change Modal */}
+      {isEmailModalOpen && (
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Card style={{ width: '400px', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 600 }}>Update Email Address</h3>
+            <form onSubmit={handleUpdateEmail} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem' }}>New Email Address</label>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <input 
+                    type="email" 
+                    className="input-field" 
+                    style={{ flex: 1 }}
+                    value={emailForm.newEmail} 
+                    onChange={e => setEmailForm({...emailForm, newEmail: e.target.value})} 
+                    disabled={isOtpSent}
+                  />
+                  <Button type="button" variant="outline" disabled={isOtpSent || isEmailUpdating} onClick={handleSendEmailOtp}>
+                    {isOtpSent ? 'Sent' : 'Send OTP'}
+                  </Button>
+                </div>
+              </div>
+              {isOtpSent && (
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem' }}>Enter OTP</label>
+                  <input 
+                    type="text" 
+                    className="input-field" 
+                    placeholder="6-digit code"
+                    value={emailForm.otp} 
+                    onChange={e => setEmailForm({...emailForm, otp: e.target.value})} 
+                  />
+                </div>
+              )}
+              <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+                <Button variant="outline" onClick={() => { setIsEmailModalOpen(false); setIsOtpSent(false); }} style={{ flex: 1 }} type="button">Cancel</Button>
+                <Button variant="primary" style={{ flex: 1 }} type="submit" disabled={!isOtpSent || isEmailUpdating}>
+                  {isEmailUpdating ? 'Updating...' : 'Verify & Update'}
+                </Button>
+              </div>
+            </form>
+          </Card>
+        </div>
+      )}
+
+      {/* Password Change Modal */}
+      {isPasswordModalOpen && (
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Card style={{ width: '400px', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 600 }}>Change Password</h3>
+            <form onSubmit={handleUpdatePassword} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem' }}>Current Password</label>
+                <input 
+                  type="password" 
+                  className="input-field" 
+                  value={passwordForm.currentPassword} 
+                  onChange={e => setPasswordForm({...passwordForm, currentPassword: e.target.value})} 
+                  required
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem' }}>New Password</label>
+                <input 
+                  type="password" 
+                  className="input-field" 
+                  value={passwordForm.newPassword} 
+                  onChange={e => setPasswordForm({...passwordForm, newPassword: e.target.value})} 
+                  required
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem' }}>Confirm New Password</label>
+                <input 
+                  type="password" 
+                  className="input-field" 
+                  value={passwordForm.confirmPassword} 
+                  onChange={e => setPasswordForm({...passwordForm, confirmPassword: e.target.value})} 
+                  required
+                />
+              </div>
+              <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+                <Button variant="outline" onClick={() => setIsPasswordModalOpen(false)} style={{ flex: 1 }} type="button">Cancel</Button>
+                <Button variant="primary" style={{ flex: 1 }} type="submit" disabled={isPasswordUpdating}>
+                  {isPasswordUpdating ? 'Updating...' : 'Update Password'}
+                </Button>
+              </div>
+            </form>
+          </Card>
         </div>
       )}
     </div>

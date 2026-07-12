@@ -9,7 +9,7 @@ export const ThemeProvider = ({ children }) => {
       if (savedTheme) {
         return savedTheme === 'dark';
       }
-      return window.matchMedia('(prefers-color-scheme: dark)').matches;
+      return false; // Default to light mode instead of checking system preferences
     }
     return false;
   });

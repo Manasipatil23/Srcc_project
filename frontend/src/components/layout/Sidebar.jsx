@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Calendar, LayoutDashboard, Users, Clock, Bell, LogOut, AlarmClock, MessageSquare, CalendarCheck, CalendarOff, Settings, IndianRupee, FileBarChart2 } from 'lucide-react';
+import { Home, Calendar, LayoutDashboard, Users, Clock, Bell, LogOut, AlarmClock, MessageSquare, CalendarCheck, CalendarOff, Settings, IndianRupee, FileBarChart2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 const Sidebar = () => {
@@ -29,13 +29,11 @@ const Sidebar = () => {
     { name: 'Reminders', path: '/admin-reminders', icon: <AlarmClock size={20} /> }
   ];
   const therapistLinks = [
-    { name: 'Dashboard', path: '/therapist/dashboard', icon: <LayoutDashboard size={20} /> },
-    { name: 'Calendar', path: '/therapist/calendar', icon: <Calendar size={20} /> },
+    { name: 'Dashboard', path: '/therapist/dashboard', icon: <Home size={20} /> },
+    { name: 'My Schedule', path: '/therapist/calendar', icon: <Calendar size={20} /> },
     { name: 'Appointments', path: '/therapist/appointments', icon: <Clock size={20} /> },
-    { name: 'Availability', path: '/therapist/availability', icon: <CalendarCheck size={20} /> },
     { name: 'Leave Requests', path: '/therapist/leave', icon: <CalendarOff size={20} /> },
     { name: 'Notifications', path: '/therapist/notifications', icon: <Bell size={20} /> },
-    { name: 'Settings', path: '/therapist/settings', icon: <Settings size={20} /> },
   ];
 
   const navItems = isAdmin ? adminLinks : isTherapist ? therapistLinks : patientLinks;

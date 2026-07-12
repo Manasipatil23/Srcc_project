@@ -13,6 +13,7 @@ import patientRoutes from './routes/patientRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
 import reportRoutes from './routes/reportRoutes.js';
 import leaveRoutes from './routes/leaveRoutes.js';
+import feedbackRoutes from './routes/feedbackRoutes.js';
 import { notFound, errorHandler } from './middleware/errorHandler.js';
 
 const app = express();
@@ -52,6 +53,7 @@ app.use('/api/patients', patientRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/leaves', leaveRoutes);
+app.use('/api/feedback', feedbackRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

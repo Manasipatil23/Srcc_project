@@ -107,7 +107,7 @@ const TherapistProfile = () => {
           >
             <Button onClick={() => navigate(`/therapists/${therapist.id}/schedule`)}> View Schedule </Button>
 
-            <Button variant="outline"> Contact Therapist </Button>
+            <Button variant="outline" onClick={() => window.location.href = `mailto:${therapist.email}`}> Contact Therapist </Button>
 
             <Button
               style={{
