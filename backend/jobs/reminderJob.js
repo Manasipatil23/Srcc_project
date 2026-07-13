@@ -2,6 +2,7 @@ import cron from 'node-cron';
 import Appointment from '../models/Appointment.js';
 import Notification from '../models/Notification.js';
 import User from '../models/User.js';
+import sendEmail from '../utils/sendEmail.js';
 
 const startReminderJob = () => {
   // Run every 15 minutes
@@ -39,8 +40,26 @@ const startReminderJob = () => {
             type: 'alert'
           });
           
-          // Optional: We can add an email here if we have a mailer service integrated
-          // await mailer.sendMail(user.email, 'Reminder', '...', ...);
+          try {
+            const patientUser = await User.findById(apt.patientId);
+            if (patientUser && patientUser.email) {
+              const msg = `
+                <h2>Upcoming Appointment Reminder (24 Hours)</h2>
+                <p>Dear ${patientUser.name},</p>
+                <p>This is a reminder that you have an upcoming <strong>${apt.type}</strong> with therapist <strong>${apt.therapistName}</strong> scheduled for tomorrow.</p>
+                <p><strong>Date:</strong> ${apt.date}<br/>
+                <strong>Time:</strong> ${apt.time}</p>
+                <p>Thank you for choosing SRCC Hospital.</p>
+              `;
+              await sendEmail({
+                email: patientUser.email,
+                subject: 'SRCC Hospital - Appointment Reminder (24h)',
+                html: msg,
+              });
+            }
+          } catch (err) {
+            console.error('Failed to send 24h reminder email:', err);
+          }
 
           apt.reminder24hSent = true;
           await apt.save();
@@ -55,6 +74,26 @@ const startReminderJob = () => {
             message: `Reminder: Your ${apt.type} with ${apt.therapistName} starts in less than 1 hour at ${apt.time}.`,
             type: 'alert'
           });
+
+          try {
+            const patientUser = await User.findById(apt.patientId);
+            if (patientUser && patientUser.email) {
+              const msg = `
+                <h2>Upcoming Appointment Reminder (1 Hour)</h2>
+                <p>Dear ${patientUser.name},</p>
+                <p>This is a reminder that your <strong>${apt.type}</strong> with therapist <strong>${apt.therapistName}</strong> starts in less than 1 hour.</p>
+                <p><strong>Time:</strong> ${apt.time}</p>
+                <p>Please make sure you are ready for your session.</p>
+              `;
+              await sendEmail({
+                email: patientUser.email,
+                subject: 'SRCC Hospital - Appointment Reminder (1h)',
+                html: msg,
+              });
+            }
+          } catch (err) {
+            console.error('Failed to send 1h reminder email:', err);
+          }
 
           apt.reminder1hSent = true;
           await apt.save();

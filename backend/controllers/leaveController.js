@@ -2,6 +2,7 @@ import Leave from '../models/Leave.js';
 import Therapist from '../models/Therapist.js';
 import User from '../models/User.js';
 import Notification from '../models/Notification.js';
+import sendEmail from '../utils/sendEmail.js';
 
 // GET /api/leaves - Admin gets all leaves
 export const getAllLeaves = async (req, res, next) => {
@@ -57,7 +58,7 @@ export const createLeave = async (req, res, next) => {
     });
 
     // Notify Admins
-    const admins = await User.find({ role: 'admin' }).select('_id');
+    const admins = await User.find({ role: 'admin' }).select('_id email');
     if (admins.length > 0) {
       await Notification.insertMany(
         admins.map(admin => ({
@@ -67,6 +68,28 @@ export const createLeave = async (req, res, next) => {
           type: 'alert'
         }))
       );
+
+      // Send emails to admins
+      try {
+        const adminEmails = admins.map(admin => admin.email).filter(Boolean);
+        if (adminEmails.length > 0) {
+          const leaveMsg = `
+            <h2>New Leave Request Submitted</h2>
+            <p>Therapist <strong>${therapist.name}</strong> has requested leave.</p>
+            <p><strong>Start Date:</strong> ${startDate}<br/>
+            <strong>End Date:</strong> ${endDate}<br/>
+            <strong>Reason:</strong> ${reason || 'Not specified'}</p>
+            <p>Please review and approve/reject the request in the admin portal.</p>
+          `;
+          await sendEmail({
+            email: adminEmails.join(','),
+            subject: `SRCC Hospital - New Leave Request from ${therapist.name}`,
+            html: leaveMsg,
+          });
+        }
+      } catch (err) {
+        console.error('Failed to send admin notification email for leave request', err);
+      }
     }
 
     res.status(201).json({ success: true, data: leave });
@@ -126,6 +149,25 @@ export const updateLeaveStatus = async (req, res, next) => {
         message: `Your leave request from ${leave.startDate} to ${leave.endDate} has been ${status.toLowerCase()} by the administrator.`,
         type: status === 'Approved' ? 'success' : 'alert'
       });
+
+      // Send email to therapist
+      try {
+        if (therapist.email) {
+          const leaveMsg = `
+            <h2>Leave Request Status Updated</h2>
+            <p>Dear ${therapist.name},</p>
+            <p>Your leave request from <strong>${leave.startDate}</strong> to <strong>${leave.endDate}</strong> has been <strong>${status.toLowerCase()}</strong> by the administrator.</p>
+            <p>Please log in to the portal to review your schedule.</p>
+          `;
+          await sendEmail({
+            email: therapist.email,
+            subject: `SRCC Hospital - Leave Request ${status}`,
+            html: leaveMsg,
+          });
+        }
+      } catch (err) {
+        console.error('Failed to send therapist notification email for leave update', err);
+      }
     }
 
     const io = req.app.get('io');
@@ -172,7 +214,7 @@ export const editLeaveRequest = async (req, res, next) => {
     await leave.save();
 
     // Notify Admins
-    const admins = await User.find({ role: 'admin' }).select('_id');
+    const admins = await User.find({ role: 'admin' }).select('_id email');
     if (admins.length > 0) {
       await Notification.insertMany(
         admins.map(admin => ({
@@ -182,6 +224,28 @@ export const editLeaveRequest = async (req, res, next) => {
           type: 'alert'
         }))
       );
+
+      // Send emails to admins
+      try {
+        const adminEmails = admins.map(admin => admin.email).filter(Boolean);
+        if (adminEmails.length > 0) {
+          const leaveMsg = `
+            <h2>Leave Request Edited</h2>
+            <p>Therapist <strong>${leave.therapistName}</strong> has edited their approved leave request and is requesting re-approval.</p>
+            <p><strong>Proposed New Start Date:</strong> ${startDate}<br/>
+            <strong>Proposed New End Date:</strong> ${endDate}<br/>
+            <strong>Reason for Edit:</strong> ${editReason}</p>
+            <p>Please review the changes in the admin portal.</p>
+          `;
+          await sendEmail({
+            email: adminEmails.join(','),
+            subject: `SRCC Hospital - Leave Request Edited by ${leave.therapistName}`,
+            html: leaveMsg,
+          });
+        }
+      } catch (err) {
+        console.error('Failed to send admin notification email for edited leave request', err);
+      }
     }
 
     const io = req.app.get('io');

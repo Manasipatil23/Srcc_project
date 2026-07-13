@@ -4,6 +4,8 @@ import Therapist from '../models/Therapist.js';
 import Schedule from '../models/Schedule.js';
 import Notification from '../models/Notification.js';
 import Payment from '../models/Payment.js';
+import User from '../models/User.js';
+import sendEmail from '../utils/sendEmail.js';
 
 // GET /api/appointments?userId=&therapistId=&status=
 export const getAppointments = async (req, res, next) => {
@@ -83,6 +85,51 @@ export const bookAppointment = async (req, res, next) => {
       type: 'success',
     });
 
+    // Send email notifications
+    try {
+      // 1. To Patient
+      if (appointment.patientId) {
+        const patientUser = await User.findById(appointment.patientId);
+        if (patientUser && patientUser.email) {
+          const patientMsg = `
+            <h2>Appointment Confirmed</h2>
+            <p>Dear ${patientName},</p>
+            <p>Your appointment for <strong>${type}</strong> with therapist <strong>${therapist.name}</strong> has been successfully booked.</p>
+            <p><strong>Date:</strong> ${date}<br/>
+            <strong>Time:</strong> ${time}<br/>
+            <strong>Consultation Fee:</strong> ₹${payment.amount} (payable at the centre)</p>
+            <p>Thank you for choosing SRCC Hospital.</p>
+          `;
+          await sendEmail({
+            email: patientUser.email,
+            subject: 'SRCC Hospital - Appointment Confirmed',
+            html: patientMsg,
+          });
+        }
+      }
+
+      // 2. To Therapist
+      if (therapist.email) {
+        const therapistMsg = `
+          <h2>New Appointment Booked</h2>
+          <p>Dear ${therapist.name},</p>
+          <p>A new appointment has been scheduled with you.</p>
+          <p><strong>Patient Name:</strong> ${patientName}<br/>
+          <strong>Service Type:</strong> ${type}<br/>
+          <strong>Date:</strong> ${date}<br/>
+          <strong>Time:</strong> ${time}</p>
+          <p>Please log in to your portal to view details.</p>
+        `;
+        await sendEmail({
+          email: therapist.email,
+          subject: 'SRCC Hospital - New Appointment Booked',
+          html: therapistMsg,
+        });
+      }
+    } catch (err) {
+      console.error('Failed to send appointment confirmation emails:', err);
+    }
+
     const io = req.app.get('io');
     if (io) {
       io.emit('appointment_updated', { therapistId: therapist._id });
@@ -136,6 +183,51 @@ export const rescheduleAppointment = async (req, res, next) => {
       type: 'success',
     });
 
+    // Send email notifications
+    try {
+      // 1. To Patient
+      if (appointment.patientId) {
+        const patientUser = await User.findById(appointment.patientId);
+        if (patientUser && patientUser.email) {
+          const patientMsg = `
+            <h2>Appointment Rescheduled</h2>
+            <p>Dear ${appointment.patientName},</p>
+            <p>Your appointment with therapist <strong>${appointment.therapistName}</strong> has been rescheduled.</p>
+            <p><strong>New Date:</strong> ${date}<br/>
+            <strong>New Time:</strong> ${time}</p>
+            <p>Please log in to your portal to review any updates.</p>
+          `;
+          await sendEmail({
+            email: patientUser.email,
+            subject: 'SRCC Hospital - Appointment Rescheduled',
+            html: patientMsg,
+          });
+        }
+      }
+
+      // 2. To Therapist
+      if (appointment.therapistId) {
+        const therapist = await Therapist.findById(appointment.therapistId);
+        if (therapist && therapist.email) {
+          const therapistMsg = `
+            <h2>Appointment Rescheduled</h2>
+            <p>Dear ${therapist.name},</p>
+            <p>Your appointment with patient <strong>${appointment.patientName}</strong> has been rescheduled.</p>
+            <p><strong>New Date:</strong> ${date}<br/>
+            <strong>New Time:</strong> ${time}</p>
+            <p>Please log in to your portal to review details.</p>
+          `;
+          await sendEmail({
+            email: therapist.email,
+            subject: 'SRCC Hospital - Appointment Rescheduled',
+            html: therapistMsg,
+          });
+        }
+      }
+    } catch (err) {
+      console.error('Failed to send reschedule notification emails:', err);
+    }
+
     const io = req.app.get('io');
     if (io) {
       io.emit('appointment_updated', { therapistId: appointment.therapistId });
@@ -181,6 +273,46 @@ export const updateAppointmentStatus = async (req, res, next) => {
         message: `Your session with ${appointment.therapistName} on ${appointment.date} at ${appointment.time} has been cancelled.`,
         type: 'alert',
       });
+
+      // Send cancellation emails
+      try {
+        // 1. To Patient
+        if (appointment.patientId) {
+          const patientUser = await User.findById(appointment.patientId);
+          if (patientUser && patientUser.email) {
+            const patientMsg = `
+              <h2>Appointment Cancelled</h2>
+              <p>Dear ${appointment.patientName},</p>
+              <p>Your appointment with therapist <strong>${appointment.therapistName}</strong> scheduled for <strong>${appointment.date}</strong> at <strong>${appointment.time}</strong> has been cancelled.</p>
+              <p>If you have any questions or would like to reschedule, please visit our portal or contact the support desk.</p>
+            `;
+            await sendEmail({
+              email: patientUser.email,
+              subject: 'SRCC Hospital - Appointment Cancelled',
+              html: patientMsg,
+            });
+          }
+        }
+
+        // 2. To Therapist
+        if (appointment.therapistId) {
+          const therapist = await Therapist.findById(appointment.therapistId);
+          if (therapist && therapist.email) {
+            const therapistMsg = `
+              <h2>Appointment Cancelled</h2>
+              <p>Dear ${therapist.name},</p>
+              <p>The appointment scheduled with you by patient <strong>${appointment.patientName}</strong> for <strong>${appointment.date}</strong> at <strong>${appointment.time}</strong> has been cancelled.</p>
+            `;
+            await sendEmail({
+              email: therapist.email,
+              subject: 'SRCC Hospital - Appointment Cancelled',
+              html: therapistMsg,
+            });
+          }
+        }
+      } catch (err) {
+        console.error('Failed to send cancellation notification emails:', err);
+      }
     }
 
     const io = req.app.get('io');
